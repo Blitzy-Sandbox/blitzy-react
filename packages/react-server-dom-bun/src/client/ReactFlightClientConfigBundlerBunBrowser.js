@@ -14,7 +14,7 @@ import type {
 } from 'shared/ReactTypes';
 
 export function loadChunk(filename: string): Promise<mixed> {
-  return import(filename);
+  return __bun_load__(filename);
 }
 
 // We cache ReactIOInfo across requests so that inner refreshes can dedupe with outer.

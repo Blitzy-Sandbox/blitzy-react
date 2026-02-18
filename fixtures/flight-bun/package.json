@@ -12,7 +12,9 @@
   },
   "scripts": {
     "predev": "cp -r ../../build/oss-experimental/* ./node_modules/",
-    "dev": "bun run --conditions=react-server server/server.js",
+    "dev": "bun run dev:region & sleep 1 && bun run dev:global",
+    "dev:region": "NODE_ENV=development bun run --conditions=react-server server/region.js",
+    "dev:global": "NODE_ENV=development bun run server/global.js",
     "build": "bun run scripts/build.js",
     "test": "bun run test:e2e",
     "test:e2e": "playwright test"

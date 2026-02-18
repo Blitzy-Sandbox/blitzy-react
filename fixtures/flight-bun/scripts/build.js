@@ -6,25 +6,28 @@
  */
 
 // Client bundle build script for the Bun Flight fixture.
-// Uses Bun.build() API with the RSC plugin from react-server-dom-bun/plugin
-// for 'use client' / 'use server' directive detection and manifest generation.
+//
+// Bundles the client entry point (src/index.js) and all its dependencies —
+// including the client component implementations (Counter, Form, Navigation),
+// React, ReactDOM, and the react-server-dom-bun Flight client — into a single
+// browser-ready JavaScript file at build/client.js.
+//
+// The __RSC_SRC_DIR__ define injects the absolute path to the fixture's src/
+// directory so the client-side module cache keys match the absolute file paths
+// that the region server serializes into the Flight stream.
 //
 // Run with: bun run scripts/build.js
 
 import path from 'path';
-import {rmSync, existsSync, writeFileSync} from 'node:fs';
-import {bunReactServerComponentsPlugin} from 'react-server-dom-bun/plugin';
+import {rmSync, existsSync} from 'node:fs';
 
 // ---------------------------------------------------------------------------
 // Path resolution
 // ---------------------------------------------------------------------------
-// import.meta.dir is the Bun-native equivalent of __dirname. It returns the
-// directory of the currently executing script without requiring a CommonJS
-// environment.
 const rootDir = path.resolve(import.meta.dir, '..');
-const srcDir = path.join(rootDir, 'src');
-const buildDir = path.join(rootDir, 'build');
-const entryPoint = path.join(srcDir, 'index.js');
+const srcDir = path.resolve(rootDir, 'src');
+const buildDir = path.resolve(rootDir, 'build');
+const entryPoint = path.resolve(srcDir, 'index.js');
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -40,40 +43,35 @@ console.log('Building client bundle...');
 console.log('  Entry:  ' + entryPoint);
 console.log('  Output: ' + buildDir);
 console.log('  Mode:   ' + (isProduction ? 'production' : 'development'));
+console.log('  SrcDir: ' + srcDir);
 
 // ---------------------------------------------------------------------------
 // Execute Bun.build()
 // ---------------------------------------------------------------------------
-// Bun.build() is the Bun-native bundler API. It returns a Promise that
-// resolves to a BuildOutput containing:
-//   - success  : boolean – whether the build completed without errors
-//   - outputs  : BuildArtifact[] – emitted files with path, kind, and size
-//   - logs     : BuildMessage[] – warnings and errors from the build
+// The client entry point (src/index.js) uses require() to import client
+// components and React packages. Bun.build() resolves and bundles all
+// dependencies into a single output file.
 //
-// The bunReactServerComponentsPlugin() integrates with onResolve/onLoad hooks
-// to detect 'use client' and 'use server' directives, replace client modules
-// with reference proxies, annotate server modules with reference metadata, and
-// write react-client-manifest.json, react-server-manifest.json, and
-// react-ssr-manifest.json into the output directory.
-//
-// The naming.entry option maps the entry point output to 'client.[ext]' so
-// the produced bundle is build/client.js — matching the path expected by
-// public/index.html (<script src="/static/client.js">) and the server's
-// fallback bootstrap script resolution.
+// Key configuration:
+// - target: 'browser' — produces browser-compatible output
+// - define.__RSC_SRC_DIR__: Injects the absolute src/ path as a string
+//   constant so the client-side module cache keys match the region server's
+//   manifest keys (which are absolute file paths)
+// - naming.entry: 'client.[ext]' — produces build/client.js matching the
+//   HTML shell's <script src="/static/client.js"> reference
 // ---------------------------------------------------------------------------
 const result = await Bun.build({
   entrypoints: [entryPoint],
   outdir: buildDir,
   target: 'browser',
   format: 'esm',
-  splitting: true,
-  plugins: [bunReactServerComponentsPlugin()],
   minify: isProduction,
-  sourcemap: 'external',
+  sourcemap: isProduction ? 'external' : 'none',
+  define: {
+    '__RSC_SRC_DIR__': JSON.stringify(srcDir),
+  },
   naming: {
     entry: 'client.[ext]',
-    chunk: '[name]-[hash].[ext]',
-    asset: '[name]-[hash].[ext]',
   },
 });
 
@@ -89,26 +87,10 @@ if (!result.success) {
 }
 
 // ---------------------------------------------------------------------------
-// Write entrypoint manifest
-// ---------------------------------------------------------------------------
-// The server reads build/entrypoint-manifest.json to discover bootstrap
-// script paths. This allows the server to inject the correct <script> tag
-// into SSR-rendered HTML without hardcoding the filename.
-const entryArtifacts = result.outputs.filter(a => a.kind === 'entry-point');
-const mainEntry = entryArtifacts.length > 0
-  ? '/static/' + path.basename(entryArtifacts[0].path)
-  : '/static/client.js';
-
-const manifestPath = path.join(buildDir, 'entrypoint-manifest.json');
-const entrypointManifest = {main: mainEntry};
-writeFileSync(manifestPath, JSON.stringify(entrypointManifest, null, 2) + '\n');
-
-// ---------------------------------------------------------------------------
 // Log build output
 // ---------------------------------------------------------------------------
 console.log('Client build completed successfully.');
-console.log('Output directory: ' + buildDir);
 for (const artifact of result.outputs) {
-  console.log('  ' + artifact.path + ' (' + artifact.kind + ')');
+  const sizeKB = (artifact.size / 1024).toFixed(2);
+  console.log('  ' + path.basename(artifact.path) + ' (' + sizeKB + ' KB)');
 }
-console.log('Entrypoint manifest: ' + manifestPath);

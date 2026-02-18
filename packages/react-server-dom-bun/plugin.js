@@ -28,14 +28,6 @@ type BunPlugin = {
 const PLUGIN_NAME = 'react-server-dom-bun';
 
 /**
- * The CLIENT_REFERENCE_TAG and SERVER_REFERENCE_TAG symbols must match
- * the ones used in ReactFlightBunReferences.js and in the shared Flight
- * protocol implementation. Using Symbol.for() ensures cross-module identity.
- */
-const CLIENT_REFERENCE_TAG = Symbol.for('react.client.reference');
-const SERVER_REFERENCE_TAG = Symbol.for('react.server.reference');
-
-/**
  * Detect whether the given module source begins with a 'use client' or
  * 'use server' directive.  Returns the matched directive string or null
  * when neither directive is present.  The function performs a fast string
@@ -180,9 +172,10 @@ function writeManifestFiles(
       JSON.stringify(ssrManifest, null, 2),
     );
   } catch (err) {
-    console.error(
-      PLUGIN_NAME + ': Failed to write manifest files: ' + err.message,
-    );
+    if (__DEV__) {
+      // eslint-disable-next-line react-internal/warning-args
+      console.error('%s', PLUGIN_NAME + ': Failed to write manifest files: ' + err.message);
+    }
   }
 }
 
@@ -215,7 +208,7 @@ function generateClientProxyModule(
         '  function() { throw new Error("Attempted to call the default export of ' +
         moduleId +
         ' from the server. ' +
-        "Client references cannot be called on the server.\"); },\n" +
+        'Client references cannot be called on the server.\\"); },\n' +
         '  {\n' +
         '    $$typeof: {value: Symbol.for("react.client.reference")},\n' +
         '    $$id: {value: ' +
@@ -235,7 +228,7 @@ function generateClientProxyModule(
         '() of ' +
         moduleId +
         ' from the server. ' +
-        "Client references cannot be called on the server.\"); },\n" +
+        'Client references cannot be called on the server.\\"); },\n' +
         '  {\n' +
         '    $$typeof: {value: Symbol.for("react.client.reference")},\n' +
         '    $$id: {value: ' +
@@ -435,12 +428,12 @@ export function bunReactServerComponentsPlugin(
         moduleId: string,
         exportNames: Array<string>,
         filePath: string,
-        outdir: string,
+        outputDir: string,
       ): {contents: string, loader: string} {
         // Compute relative chunk path from the output directory.  For Bun
         // builds the chunk is typically the bundled output file itself.
         const chunks: Array<string> = [];
-        const resolvedOutdir = path.resolve(outdir);
+        const resolvedOutdir = path.resolve(outputDir);
         const relPath = path.relative(resolvedOutdir, filePath);
         if (relPath) {
           chunks.push(relPath);
@@ -485,7 +478,7 @@ export function bunReactServerComponentsPlugin(
         // Persist manifests to disk after every client module discovery.
         // The last write during the build will contain the complete data.
         writeManifestFiles(
-          outdir,
+          outputDir,
           clientManifestFilename,
           serverManifestFilename,
           ssrManifestFilename,
@@ -513,7 +506,7 @@ export function bunReactServerComponentsPlugin(
         moduleId: string,
         exportNames: Array<string>,
         source: string,
-        outdir: string,
+        outputDir: string,
       ): {contents: string, loader: string} {
         const chunks: Array<string> = [];
 
@@ -537,7 +530,7 @@ export function bunReactServerComponentsPlugin(
 
         // Persist manifests to disk
         writeManifestFiles(
-          outdir,
+          outputDir,
           clientManifestFilename,
           serverManifestFilename,
           ssrManifestFilename,

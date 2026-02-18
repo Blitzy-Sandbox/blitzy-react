@@ -485,6 +485,7 @@ module.exports = {
       files: ['packages/react-server-dom-bun/**/*.js'],
       globals: {
         __bun_require__: 'readonly',
+        __bun_load__: 'readonly',
       },
     },
     {
