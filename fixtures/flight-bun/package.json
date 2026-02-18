@@ -1,0 +1,20 @@
+{
+  "name": "flight-bun",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "react": "experimental",
+    "react-dom": "experimental",
+    "react-server-dom-bun": "experimental"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1"
+  },
+  "scripts": {
+    "predev": "cp -r ../../build/oss-experimental/* ./node_modules/",
+    "dev": "bun run --conditions=react-server server/server.js",
+    "build": "bun run scripts/build.js",
+    "test": "bun run test:e2e",
+    "test:e2e": "playwright test"
+  }
+}
