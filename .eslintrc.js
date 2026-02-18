@@ -326,6 +326,7 @@ module.exports = {
         'packages/react-devtools-shared/**/*.js',
         'packages/react-noop-renderer/**/*.js',
         'packages/react-refresh/**/*.js',
+        'packages/react-server-dom-bun/**/*.js',
         'packages/react-server-dom-esm/**/*.js',
         'packages/react-server-dom-webpack/**/*.js',
         'packages/react-server-dom-turbopack/**/*.js',
@@ -478,6 +479,12 @@ module.exports = {
       globals: {
         __turbopack_load_by_url__: 'readonly',
         __turbopack_require__: 'readonly',
+      },
+    },
+    {
+      files: ['packages/react-server-dom-bun/**/*.js'],
+      globals: {
+        __bun_require__: 'readonly',
       },
     },
     {
