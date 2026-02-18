@@ -633,6 +633,82 @@ const bundles = [
     externals: ['react', 'react-dom'],
   },
 
+  /******* React Server DOM Bun Server *******/
+  {
+    bundleTypes: [BUN_DEV, BUN_PROD],
+    moduleType: RENDERER,
+    entry:
+      'react-server-dom-bun/src/server/react-flight-dom-server.browser',
+    name: 'react-server-dom-bun-server.browser',
+    condition: 'react-server',
+    global: 'ReactServerDOMServer',
+    minifyWithProdErrorCodes: false,
+    wrapWithModuleBoundaries: false,
+    externals: ['react', 'react-dom'],
+  },
+  {
+    bundleTypes: [BUN_DEV, BUN_PROD],
+    moduleType: RENDERER,
+    entry: 'react-server-dom-bun/src/server/react-flight-dom-server.node',
+    name: 'react-server-dom-bun-server.node',
+    condition: 'react-server',
+    global: 'ReactServerDOMServer',
+    minifyWithProdErrorCodes: false,
+    wrapWithModuleBoundaries: false,
+    externals: [
+      'react',
+      'react-dom',
+      'async_hooks',
+      'crypto',
+      'stream',
+      'util',
+    ],
+  },
+  {
+    bundleTypes: [BUN_DEV, BUN_PROD],
+    moduleType: RENDERER,
+    entry: 'react-server-dom-bun/src/server/react-flight-dom-server.edge',
+    name: 'react-server-dom-bun-server.edge',
+    condition: 'react-server',
+    global: 'ReactServerDOMServer',
+    minifyWithProdErrorCodes: false,
+    wrapWithModuleBoundaries: false,
+    externals: ['react'],
+  },
+
+  /******* React Server DOM Bun Client *******/
+  {
+    bundleTypes: [BUN_DEV, BUN_PROD],
+    moduleType: RENDERER,
+    entry:
+      'react-server-dom-bun/src/client/react-flight-dom-client.browser',
+    name: 'react-server-dom-bun-client.browser',
+    global: 'ReactServerDOMClient',
+    minifyWithProdErrorCodes: false,
+    wrapWithModuleBoundaries: false,
+    externals: ['react', 'react-dom'],
+  },
+  {
+    bundleTypes: [BUN_DEV, BUN_PROD],
+    moduleType: RENDERER,
+    entry: 'react-server-dom-bun/src/client/react-flight-dom-client.node',
+    name: 'react-server-dom-bun-client.node',
+    global: 'ReactServerDOMClient',
+    minifyWithProdErrorCodes: false,
+    wrapWithModuleBoundaries: false,
+    externals: ['react', 'react-dom', 'util'],
+  },
+  {
+    bundleTypes: [BUN_DEV, BUN_PROD],
+    moduleType: RENDERER,
+    entry: 'react-server-dom-bun/src/client/react-flight-dom-client.edge',
+    name: 'react-server-dom-bun-client.edge',
+    global: 'ReactServerDOMClient',
+    minifyWithProdErrorCodes: false,
+    wrapWithModuleBoundaries: false,
+    externals: ['react', 'react-dom'],
+  },
+
   /******* React Server DOM Parcel Server *******/
   {
     bundleTypes: [NODE_DEV, NODE_PROD],
