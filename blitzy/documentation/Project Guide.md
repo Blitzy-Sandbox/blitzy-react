@@ -1,324 +1,421 @@
-# Project Guide: react-server-dom-bun Package & Flight-Bun Fixture
+# Project Guide: react-server-dom-bun — React Server Components for Bun
 
-## 1. Executive Summary
+## Executive Summary
 
-This project implements a production-quality `react-server-dom-bun` package and a full-stack `fixtures/flight-bun/` demo application that enables React Server Components on the Bun runtime with full Flight protocol support. The implementation mirrors the `react-server-dom-turbopack` reference package (~55 files) and integrates with the existing React monorepo build system.
+**Project Completion: 80.0%** — 152 hours of development work have been completed out of an estimated 190 total hours required.
 
-**Completion: 112 hours completed out of 148 total hours = 75.7% complete.**
+The `react-server-dom-bun` package has been successfully implemented as a new React Server Components Flight protocol integration for the Bun runtime. All 90 planned files (10,654 lines of code) have been created across the package source, build system integration, fork files, test suite, and full-stack fixture application. The implementation mirrors the `react-server-dom-turbopack` reference package structure with Bun-specific adaptations.
 
-### Key Achievements
-- **All 89 files** created/modified as specified in the Agent Action Plan
-- **12/12 Rollup bundles** compile successfully (BUN_DEV + BUN_PROD × 6 targets)
-- **Flow type checking** passes with zero errors across all 3 host configs (dom-browser-bun, dom-node-bun, dom-edge-bun)
-- **17/17 package tests** pass across 6 test suites
-- **221/221 regression tests** pass (zero regressions in turbopack + webpack packages)
-- **ESLint** passes with zero violations
-- **Full-stack fixture** with Bun HTTP server, Server Components, Client Components, and Server Actions
+**Key Achievements:**
+- Complete server/client Flight implementations for browser, Node, and edge targets
+- Bun bundler plugin (555 LOC) for `'use client'`/`'use server'` directive detection
+- 96/96 unit tests passing with 91.11% source code line coverage
+- 12 production build bundles generated successfully
+- Zero regressions on existing turbopack (17/17) and webpack (204/204) test suites
+- Flow type checking passes with zero errors on all 3 host configurations
+- Full-stack fixture with Bun.serve() HTTP server, RSC streaming, and Playwright E2E tests
 
-### Critical Items Requiring Attention
-- Test coverage at 47% line coverage (target: 85%) — additional test cases needed
-- Fixture E2E tests require Bun runtime (>= 1.1) for validation
-- CI/CD pipeline integration pending
-
----
-
-## 2. Validation Results Summary
-
-### Gate Results
-
-| Gate | Status | Details |
-|------|--------|---------|
-| Dependencies | ✅ PASS | `yarn install` completes, all workspaces resolve |
-| Build/Compilation | ✅ PASS | 12/12 bundles built (server.browser/node/edge + client.browser/node/edge × dev/prod) |
-| Flow Type Checking | ✅ PASS | dom-node-bun (741 files), dom-browser-bun (733 files), dom-edge-bun (737 files) — 0 errors |
-| Package Unit Tests | ✅ PASS | 6/6 test suites, 17/17 tests passed |
-| Regression Tests | ✅ PASS | turbopack 17/17 + webpack 204/204 = 221/221 (0 regressions) |
-| Lint | ✅ PASS | Zero violations across all changed files |
-
-### Fixes Applied During Validation
-- Stream config fork files created for all 3 Bun host configs (dom-browser-bun, dom-node-bun, dom-edge-bun)
-- ESLint configuration updated with `__bun_require__` and `__bun_load__` globals
-- Flow environment declarations added for Bun-specific globals
-- Comprehensive validation fix commit addressing all build/test issues
-
-### Test Coverage Analysis
-- **All files**: 47.21% statements, 44% branches, 37.2% functions, 42.59% lines
-- **High coverage files**: ReactFlightImportMetadata.js (100%), ReactFlightClientConfigTargetBunBrowser.js (100%), ReactFlightServerConfigBunBundler.js (82%)
-- **Low coverage files**: ReactFlightDOMServerNode.js (14.6% lines — Node.js pipeable stream path), ReactFlightClientConfigBundlerBunBrowser.js (5.9% — browser chunk loading)
+**Critical Issues Requiring Attention:**
+- `yarn linc` fails with 8 minor lint errors in test files (unused variables, variable shadowing)
+- Integration testing with real Bun.build() bundler not yet performed (tests use BunMock.js)
+- CI/CD pipeline for the new package not yet configured
 
 ---
 
-## 3. Hours Breakdown
+## Validation Results
 
-### Completed Work: 112 Hours
+### Flow Type Checking
+| Host Config | Files Checked | Errors | Status |
+|-------------|--------------|--------|--------|
+| dom-browser-bun | 733 | 0 | ✅ Pass |
+| dom-node-bun | 741 | 0 | ✅ Pass |
+| dom-edge-bun | 737 | 0 | ✅ Pass |
 
-| Component | Hours | Details |
-|-----------|-------|---------|
-| Server Implementation (Group 2) | 32h | 7 files, 1478 LOC — ReactFlightDOMServerBrowser/Edge/Node, BunBundler config, barrels |
-| Client Implementation (Group 3) | 28h | 11 files, 1166 LOC — BundlerBun config, target configs, DOMClient Browser/Edge/Node, barrels |
-| Package Structure (Group 1) | 18h | 15 files — package.json, guards, entry shims, plugin.js (555 LOC) |
-| Shared & References (Group 4) | 9h | 2 files, 400 LOC — ReactFlightBunReferences (360 LOC), ImportMetadata |
-| Tests (Group 8) | 20h | 7 files, 1591 LOC — 6 test suites + BunMock (197 LOC) |
-| Fixture Application (Group 9) | 36h | 18 files, ~1600 LOC — Bun server, components, actions, E2E tests |
-| Build System (Group 7) | 8h | 4 files modified — bundles.js, inlinedHostConfigs.js, .eslintrc.js, environment.js |
-| Fork Files (Group 6) | 7h | 9 files, 173 LOC — server + stream + client forks |
-| npm Adapters (Group 5) | 3h | 13 files, 134 LOC — CJS adapters with NODE_ENV resolution |
-| Validation & Debugging | 8h | Flow fixes, test debugging, build verification, lint fixes |
-| **Total Completed** | **112h** | |
+### Build Results
+All 12 bundles built successfully via `RELEASE_CHANNEL=experimental node ./scripts/rollup/build.js react-server-dom-bun/ --type=BUN_DEV,BUN_PROD`:
 
-### Remaining Work: 36 Hours
+| Bundle | Dev Size | Prod Size | Gzip (Prod) |
+|--------|----------|-----------|-------------|
+| server.browser | 183.93 KB | 116.46 KB | 23.22 KB |
+| server.node | 212.01 KB | 124.23 KB | 24.56 KB |
+| server.edge | 187.03 KB | 117.65 KB | 23.50 KB |
+| client.browser | 162.69 KB | 61.57 KB | 11.96 KB |
+| client.node | 167.76 KB | 72.19 KB | 13.92 KB |
+| client.edge | 162.05 KB | 67.76 KB | 13.25 KB |
 
-| Task | Hours | Confidence |
-|------|-------|------------|
-| Test coverage improvement (47% → 85%) | 20h | Medium |
-| Fixture E2E validation with Bun runtime | 8h | Medium-Low |
-| Production build artifact verification | 2h | High |
-| CI/CD pipeline integration | 4h | Medium |
-| Documentation enhancement | 2h | High |
-| **Total Remaining** | **36h** | |
+### Test Results
+| Suite | Tests | Status |
+|-------|-------|--------|
+| ReactFlightBunDOM-test.js | 28 | ✅ Pass |
+| ReactFlightBunDOMBrowser-test.js | 15 | ✅ Pass |
+| ReactFlightBunDOMEdge-test.js | 17 | ✅ Pass |
+| ReactFlightBunDOMNode-test.js | 33 | ✅ Pass |
+| ReactFlightBunDOMReply-test.js | 2 | ✅ Pass |
+| ReactFlightBunDOMReplyEdge-test.js | 1 | ✅ Pass |
+| **Total** | **96/96** | **✅ All Pass** |
 
-### Visual Representation
+**Coverage (src/):** 91.57% statements, 82.97% branches, 83.33% functions, **91.11% lines** (exceeds 85% target)
+
+### Regression Tests
+| Package | Suites | Tests | Status |
+|---------|--------|-------|--------|
+| react-server-dom-turbopack | 6 | 17/17 | ✅ Pass |
+| react-server-dom-webpack | 7 | 204/204 | ✅ Pass |
+
+### Lint Results
+`yarn linc` reports **8 errors** (all in test files):
+- `ReactFlightBunDOM-test.js`: 3 unused-vars (`bunServerMap`, `ReactServer`, `registerServerReference`), 4 no-shadow (`response`)
+- `ReactFlightBunDOMBrowser-test.js`: 1 unused-var (`resolveGreeting`)
+
+### Fixture Validation (per agent logs)
+- Bun HTTP servers running on ports 3001 (global) and 3002 (region)
+- Flight stream output verified with client/server component references
+- Playwright E2E smoke test passing (initial render, hydration, counter, form, Suspense)
+
+---
+
+## Hours Breakdown
+
+### Completed Work: 152 Hours
+
+| Category | Files | LOC | Hours | Description |
+|----------|-------|-----|-------|-------------|
+| Server Implementation | 7 | 1,498 | 20 | Flight server for browser/node/edge targets + bundler config |
+| Client Implementation | 11 | 1,177 | 16 | Flight client for browser/node/edge targets + config files |
+| Shared & References | 2 | 400 | 5 | Import metadata types, client/server reference system |
+| Bun Bundler Plugin | 1 | 555 | 14 | Novel RSC directive detection via Bun.build() plugin API |
+| Root Entries & Guards | 14 | 170 | 6 | Entry shims, guard files, package.json |
+| NPM Adapters | 13 | 134 | 3 | CJS adapters with NODE_ENV dev/prod resolution |
+| Fork Files | 9 | 173 | 5 | Server/client/stream config forks for 3 host configs |
+| Build System Integration | 4 | 225 | 8 | Bundle entries, host configs, ESLint/Flow globals |
+| Test Suite | 7 | 3,374 | 28 | 96 tests + BunMock.js mock bundler infrastructure |
+| Fixture Application | 19 | 1,579 | 34 | Full-stack RSC demo with Bun.serve(), E2E tests |
+| Documentation | 1 | 324 | 3 | README.md with API reference and architecture docs |
+| Validation & Debugging | — | — | 10 | Flow fixes, build debugging, test coverage improvement |
+| **Total** | **88** | **9,609** | **152** | |
+
+### Remaining Work: 38 Hours
+
+| # | Task | Hours | Priority | Severity | Confidence |
+|---|------|-------|----------|----------|------------|
+| 1 | Fix 8 lint errors in test files (unused vars, no-shadow) | 1 | High | Low | High |
+| 2 | Comprehensive code review and refinement | 5 | High | Medium | Medium |
+| 3 | Set up CI/CD pipeline for react-server-dom-bun builds and tests | 5 | Medium | Medium | Medium |
+| 4 | Configure Bun runtime environment in CI runners | 2 | Medium | Medium | High |
+| 5 | Integration testing with real Bun.build() bundler and manifest generation | 7 | Medium | High | Low |
+| 6 | Security audit of acorn-loose, neo-async dependencies and plugin code execution | 2 | Medium | Medium | High |
+| 7 | Performance benchmarking: RSC streaming throughput vs turbopack Flight | 5 | Low | Low | Medium |
+| 8 | Additional E2E test scenarios (error boundaries, large payloads, concurrent rendering) | 5 | Low | Low | Medium |
+| 9 | Production deployment configuration (Dockerfile for Bun, env vars, monitoring) | 4 | Medium | Low | Medium |
+| 10 | Documentation finalization (migration guide, troubleshooting, API completeness) | 2 | Low | Low | High |
+| **Total Remaining** | | **38** | | | |
+
+### Project Hours Visualization
 
 ```mermaid
-pie title Project Hours Breakdown
-    "Completed Work" : 112
-    "Remaining Work" : 36
+pie title Project Hours Breakdown (190 Total)
+    "Completed Work" : 152
+    "Remaining Work" : 38
 ```
 
----
-
-## 4. Detailed Task Table
-
-| # | Task | Priority | Severity | Hours | Action Steps |
-|---|------|----------|----------|-------|-------------|
-| 1 | Increase test coverage from 47% to 85%+ | High | High | 20 | Add tests for ReactFlightDOMServerNode.js pipeable stream paths (currently 14.6% lines); add tests for ReactFlightClientConfigBundlerBunBrowser.js chunk loading (currently 5.9% lines); add error handling branch tests for ReactFlightDOMServerBrowser.js and ReactFlightDOMServerEdge.js; add tests for encodeReply/createFromFetch edge cases in client implementations; run `NODE_ENV=development yarn jest --config scripts/jest/config.source.js packages/react-server-dom-bun --coverage` to verify |
-| 2 | Validate fixture with Bun runtime (E2E) | High | High | 8 | Install Bun >= 1.1 (`curl -fsSL https://bun.sh/install \| bash`); run `cd fixtures/flight-bun && bun install`; build experimental: `yarn build --r=experimental`; copy artifacts: `bash scripts/predev.sh`; start dev server: `bun run dev`; verify HTTP 200 on localhost:3001; run `bun run test:e2e` for Playwright smoke tests; debug any runtime issues with Bun.serve() or Flight streaming |
-| 3 | Verify production build artifacts | Medium | Medium | 2 | Run full `yarn build --r=experimental` to completion; verify `build/oss-experimental/react-server-dom-bun/` contains all 12 bundles; verify npm packaging structure matches turbopack reference; check bundle sizes are reasonable (61-212KB dev, 61-124KB prod) |
-| 4 | Add CI/CD pipeline integration | Medium | Medium | 4 | Add `react-server-dom-bun` to CI test matrix; add Bun runtime installation step to CI workflow; add Flow checks for dom-browser-bun, dom-node-bun, dom-edge-bun to CI; add fixture E2E test job with Bun runtime; verify all CI gates pass |
-| 5 | Enhance documentation | Low | Low | 2 | Expand README.md with usage examples, API reference, and getting started guide; add inline code comments for complex bundler config logic; document Bun version requirements and compatibility notes |
-| | **Total Remaining Hours** | | | **36** | |
+**Completion: 152 hours completed / (152 + 38) total hours = 80.0% complete**
 
 ---
 
-## 5. Comprehensive Development Guide
+## Detailed Remaining Task Descriptions
 
-### 5.1 System Prerequisites
+### Task 1: Fix 8 Lint Errors in Test Files (1h, High Priority)
+**Files:** `ReactFlightBunDOM-test.js`, `ReactFlightBunDOMBrowser-test.js`
 
-| Software | Version | Purpose |
-|----------|---------|---------|
-| Node.js | >= 20.x | React monorepo build system, Jest tests |
-| Yarn | 1.x (Classic) | Package management (monorepo uses Yarn Classic) |
-| Bun | >= 1.1 | Fixture runtime, bundler plugin, `Bun.serve()` |
+**Actions:**
+1. Remove or prefix unused variables with `_` in `ReactFlightBunDOM-test.js`:
+   - Line 27: `bunServerMap` — remove assignment or use the variable
+   - Line 30: `ReactServer` — remove or use
+   - Line 37: `registerServerReference` — remove or use
+2. Fix `no-shadow` violations in `ReactFlightBunDOM-test.js` (lines 616, 623, 639, 649): rename inner `response` variables to avoid shadowing
+3. Remove unused `resolveGreeting` in `ReactFlightBunDOMBrowser-test.js` (line 310)
+4. Run `node ./scripts/tasks/linc.js` to verify zero errors
+
+### Task 2: Comprehensive Code Review (5h, High Priority)
+**Scope:** Review all 56 package source files for correctness, Flow type completeness, edge case handling, and adherence to turbopack reference patterns.
+
+**Focus areas:**
+- Server bundler config (`ReactFlightServerConfigBunBundler.js`): Verify module ID resolution matches Bun's actual scheme
+- Client bundler config (`ReactFlightClientConfigBundlerBun.js`): Verify `resolveClientReference` and `resolveServerReference` implementations
+- Plugin (`plugin.js`): Review `onResolve`/`onLoad` hook correctness and manifest generation
+- Node server (`ReactFlightDOMServerNode.js`): Verify Writable pipe-based streaming correctness
+
+### Task 3: CI/CD Pipeline Setup (5h, Medium Priority)
+- Add `react-server-dom-bun` to the existing CI test matrix
+- Configure Flow checks for `dom-browser-bun`, `dom-node-bun`, `dom-edge-bun` in CI
+- Add build verification step for the 12 Bun bundles
+- Set up fixture validation (requires Bun runtime in CI)
+
+### Task 4: Bun Runtime Environment in CI (2h, Medium Priority)
+- Install Bun >= 1.1 in CI runner images
+- Configure PATH for Bun binary
+- Verify `bun install` and `bun run` work in CI environment
+- Set up Playwright browsers for fixture E2E
+
+### Task 5: Real Bun Bundler Integration Testing (7h, Medium Priority)
+**Critical:** Current tests use `BunMock.js` which simulates Bun's bundler. Production use requires testing with actual `Bun.build()`.
+
+**Actions:**
+- Create integration test that runs `Bun.build()` with the RSC plugin
+- Verify client component manifest generation matches expected format
+- Verify server reference tracking produces correct metadata
+- Test end-to-end: build → serve → hydrate → interact cycle with real Bun bundler
+- Validate that `__bun_require__` resolution works in actual Bun runtime
+
+### Task 6: Security Audit (2h, Medium Priority)
+- Run `npm audit` on `acorn-loose` and `neo-async` dependencies
+- Review `plugin.js` for code injection risks in `onResolve`/`onLoad` hooks
+- Verify server action input validation in fixture
+- Check for prototype pollution in reference proxy system
+
+### Task 7: Performance Benchmarking (5h, Low Priority)
+- Benchmark RSC streaming throughput on Bun vs Node.js
+- Measure Flight payload serialization/deserialization speed
+- Profile memory usage during large component tree rendering
+- Compare bundle sizes with turbopack Flight equivalents
+
+### Task 8: Additional E2E Scenarios (5h, Low Priority)
+- Error boundary rendering and client error recovery
+- Large payload streaming (1000+ items)
+- Concurrent rendering with useTransition
+- Network failure and reconnection handling
+- Server Action error handling and form validation
+
+### Task 9: Production Deployment Configuration (4h, Medium Priority)
+- Create Dockerfile with Bun runtime for the fixture
+- Document environment variables (PORT, NODE_ENV)
+- Set up health check endpoints
+- Configure logging and monitoring hooks
+
+### Task 10: Documentation Finalization (2h, Low Priority)
+- Complete API reference for all exported functions
+- Add migration guide for turbopack → Bun
+- Add troubleshooting section for common issues
+- Review inline code comments for completeness
+
+---
+
+## Development Guide
+
+### System Prerequisites
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| Node.js | >= 20.x | React monorepo build system |
+| Yarn | 1.22.x | Package manager (monorepo uses Yarn Classic) |
+| Bun | >= 1.1 | Required for fixture and plugin runtime |
 | Git | >= 2.x | Version control |
-| Flow | ^0.279.0 | Type checking (installed via devDependencies) |
 
-### 5.2 Environment Setup
+### Environment Setup
 
 ```bash
-# Clone repository and checkout feature branch
+# 1. Clone and enter repository
 git clone https://github.com/facebook/react.git
 cd react
 git checkout blitzy-c922176a-d9b2-41b9-8d4e-1b06d0a6a9e6
 
-# Install Bun (if not already installed)
+# 2. Install Node.js dependencies
+yarn install --frozen-lockfile
+
+# 3. Install Bun (if not already installed)
 curl -fsSL https://bun.sh/install | bash
 export PATH="$HOME/.bun/bin:$PATH"
-bun --version  # Should show >= 1.1
+
+# 4. Verify installations
+node --version    # Expected: v20.x.x
+yarn --version    # Expected: 1.22.x
+bun --version     # Expected: 1.x.x (>= 1.1)
 ```
 
-### 5.3 Dependency Installation
+### Building the Package
 
 ```bash
-# Install all monorepo dependencies (from repository root)
-yarn install
+# Build react-server-dom-bun (all 12 bundles)
+RELEASE_CHANNEL=experimental node ./scripts/rollup/build.js react-server-dom-bun/ --type=BUN_DEV,BUN_PROD
 
-# Expected output: "success Saved lockfile." and workspace resolution
-# The new react-server-dom-bun package is automatically resolved
-# via the packages/* workspace glob in root package.json
+# Verify build artifacts (12 files expected)
+ls build/node_modules/react-server-dom-bun/cjs/
+# Expected output:
+# react-server-dom-bun-client.browser.development.js
+# react-server-dom-bun-client.browser.production.js
+# react-server-dom-bun-client.edge.development.js
+# react-server-dom-bun-client.edge.production.js
+# react-server-dom-bun-client.node.development.js
+# react-server-dom-bun-client.node.production.js
+# react-server-dom-bun-server.browser.development.js
+# react-server-dom-bun-server.browser.production.js
+# react-server-dom-bun-server.edge.development.js
+# react-server-dom-bun-server.edge.production.js
+# react-server-dom-bun-server.node.development.js
+# react-server-dom-bun-server.node.production.js
 ```
 
-### 5.4 Build and Verify Package
+### Running Tests
 
 ```bash
-# Run Flow type checking for all 3 Bun host configs
-yarn flow dom-node-bun       # Expected: "No errors!" (741 files checked)
-yarn flow dom-browser-bun    # Expected: "No errors!" (733 files checked)
-yarn flow dom-edge-bun       # Expected: "No errors!" (737 files checked)
+# Run react-server-dom-bun unit tests (96 tests)
+node ./scripts/jest/jest-cli.js --ci packages/react-server-dom-bun
+# Expected: Test Suites: 6 passed, 6 total
+# Expected: Tests: 96 passed, 96 total
 
-# Run ESLint on changed files
-yarn linc                     # Expected: "Lint passed for changed files."
+# Run with coverage
+node ./scripts/jest/jest-cli.js --ci --coverage packages/react-server-dom-bun
+# Expected: src/ line coverage >= 91%
 
-# Run package tests
-NODE_ENV=development yarn jest --config scripts/jest/config.source.js \
-  packages/react-server-dom-bun --ci --watchAll=false --forceExit
-# Expected: 6 passed, 6 total | Tests: 17 passed, 17 total
+# Run regression tests
+node ./scripts/jest/jest-cli.js --ci packages/react-server-dom-turbopack
+# Expected: Tests: 17 passed, 17 total
 
-# Run regression tests (verify zero regressions)
-NODE_ENV=development yarn jest --config scripts/jest/config.source.js \
-  packages/react-server-dom-turbopack --ci --watchAll=false --forceExit
-# Expected: 6 passed, 6 total | Tests: 17 passed, 17 total
-
-NODE_ENV=development yarn jest --config scripts/jest/config.source.js \
-  packages/react-server-dom-webpack --ci --watchAll=false --forceExit
-# Expected: 7 passed, 7 total | Tests: 204 passed, 204 total
-
-# Run full experimental build (includes Bun bundles)
-yarn build --r=experimental
-# Expected: All BUILDING/COMPLETE pairs including:
-#   react-server-dom-bun-server.browser.development.js (bun_dev)
-#   react-server-dom-bun-server.browser.production.js (bun_prod)
-#   react-server-dom-bun-server.node.development.js (bun_dev)
-#   react-server-dom-bun-server.node.production.js (bun_prod)
-#   react-server-dom-bun-server.edge.development.js (bun_dev)
-#   react-server-dom-bun-server.edge.production.js (bun_prod)
-#   react-server-dom-bun-client.browser.development.js (bun_dev)
-#   react-server-dom-bun-client.browser.production.js (bun_prod)
-#   react-server-dom-bun-client.node.development.js (bun_dev)
-#   react-server-dom-bun-client.node.production.js (bun_prod)
-#   react-server-dom-bun-client.edge.development.js (bun_dev)
-#   react-server-dom-bun-client.edge.production.js (bun_prod)
+node ./scripts/jest/jest-cli.js --ci packages/react-server-dom-webpack
+# Expected: Tests: 204 passed, 204 total
 ```
 
-### 5.5 Running the Fixture Application
+### Flow Type Checking
 
 ```bash
-# Build experimental artifacts first (if not done above)
-yarn build --r=experimental
+# Check all 3 host configurations
+node ./scripts/tasks/flow.js dom-browser-bun
+# Expected: "No errors! Flow passed for the dom-browser-bun renderer"
 
-# Navigate to fixture directory
+node ./scripts/tasks/flow.js dom-node-bun
+# Expected: "No errors! Flow passed for the dom-node-bun renderer"
+
+node ./scripts/tasks/flow.js dom-edge-bun
+# Expected: "No errors! Flow passed for the dom-edge-bun renderer"
+```
+
+### Lint Checking
+
+```bash
+# Run lint on changed files
+node ./scripts/tasks/linc.js
+# Current status: 8 errors (see Task 1 for fixes)
+```
+
+### Running the Fixture Application
+
+```bash
+# 1. Build the monorepo experimental packages first
+RELEASE_CHANNEL=experimental node ./scripts/rollup/build.js react-server-dom-bun/ --type=BUN_DEV,BUN_PROD
+
+# 2. Navigate to fixture
 cd fixtures/flight-bun
 
-# Copy experimental build artifacts into fixture node_modules
-bash scripts/predev.sh
-# Alternative: npm run predev (copies from ../../build/oss-experimental/*)
-
-# Install fixture-specific dependencies
+# 3. Install fixture dependencies
+export PATH="$HOME/.bun/bin:$PATH"
 bun install
 
-# Start the development server (two-server architecture)
-# Terminal 1 — Region server (RSC rendering, port 3002):
+# 4. Copy build artifacts into fixture node_modules
+cp -r ../../build/oss-experimental/* ./node_modules/
+
+# 5. Start the development servers
+# Terminal 1 - RSC Region Server (port 3002)
 NODE_ENV=development bun run --conditions=react-server server/region.js
 
-# Terminal 2 — Global server (public, port 3001):
+# Terminal 2 - Global SSR Server (port 3001)
 NODE_ENV=development bun run server/global.js
 
-# Or use the combined command:
-bun run dev
-# This starts region server in background, waits 1 second, starts global server
-
-# Verify: Open http://localhost:3001 in browser
-# Expected: Server-rendered React page with counter, form, navigation
+# 6. Verify
+curl http://localhost:3001/
+# Expected: HTML page with React Server Components rendered
 ```
 
-### 5.6 Running Tests with Coverage
+### Running Fixture E2E Tests
 
 ```bash
-# Run tests with coverage report (from repository root)
-NODE_ENV=development yarn jest --config scripts/jest/config.source.js \
-  packages/react-server-dom-bun --ci --watchAll=false --forceExit \
-  --coverage --collectCoverageFrom='packages/react-server-dom-bun/src/**/*.js'
-
-# Run fixture E2E tests (requires Bun and running fixture server)
 cd fixtures/flight-bun
-bun run test:e2e
-# Expected: Playwright tests pass (initial render, hydration, counter, form, streaming)
+
+# Install Playwright browsers
+npx playwright install chromium
+
+# Run E2E smoke tests (servers must be running)
+npx playwright test --reporter=list
+# Expected: 1 test passed
 ```
-
-### 5.7 Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| `NODE_ENV must either be set to development or production` | Prefix test commands with `NODE_ENV=development` |
-| Jest finds 0 matches for `packages/react-server-dom-bun` | Use `--config scripts/jest/config.source.js` flag |
-| Flow config not found for `dom-node-bun` | Run `yarn flow dom-node-bun` (not `flow check --flowconfig-name`) |
-| Bun not found | Install via `curl -fsSL https://bun.sh/install \| bash` and add to PATH |
-| Fixture server fails to start | Ensure experimental build is complete and `predev.sh` has been run |
-| Port 3001 already in use | Set `PORT=<alternative>` environment variable |
 
 ---
 
-## 6. Risk Assessment
+## Risk Assessment
 
 ### Technical Risks
 
 | Risk | Severity | Likelihood | Mitigation |
 |------|----------|------------|------------|
-| Test coverage below 85% target (currently 47%) | High | Confirmed | Add tests for Node.js pipeable stream, browser chunk loading, and error handling paths |
-| Bun runtime API compatibility | Medium | Low | Plugin uses stable `onResolve`/`onLoad` hooks (esbuild-compatible); server uses standard `Bun.serve()` |
-| Large codebase (8,635 LOC) maintainability | Medium | Medium | Code mirrors turbopack patterns exactly — updates can be mechanically applied |
-| Fixture not validated on actual Bun runtime | High | Medium | E2E tests and dev server require Bun >= 1.1 installation for validation |
+| Bun runtime API instability (Bun is evolving rapidly; plugin API may change) | Medium | Medium | Pin Bun version in CI; monitor Bun release notes; abstract plugin API behind stable interface |
+| BunMock.js divergence from real Bun bundler behavior | Medium | Medium | Add integration tests with actual Bun.build() (Task 5); validate manifest format against Bun docs |
+| Fork file resolution chain fragility | Low | Low | Fork naming follows strict convention; any upstream changes to `findNearestExistingForkFile` in forks.js would affect all packages equally |
+| Lint gate failure blocks merge | Low | High (currently failing) | Fix 8 trivial errors in test files (Task 1, ~1 hour) |
 
 ### Security Risks
 
 | Risk | Severity | Likelihood | Mitigation |
 |------|----------|------------|------------|
-| Server Action input validation | Medium | Low | Server Actions use React's built-in decodeAction/decodeFormState with Flight protocol validation |
-| Module resolution in bundler plugin | Low | Low | Plugin uses standard Bun.build() API, no custom module execution |
-| Fixture uses in-memory data only | None | N/A | No database, no external services, demo-only |
+| Plugin code execution during build | Low | Low | Plugin only runs at build time, not runtime; onResolve/onLoad hooks are standard Bun/esbuild patterns |
+| Dependency vulnerabilities (acorn-loose, neo-async) | Low | Low | Both are well-maintained, widely-used packages; run `npm audit` regularly |
+| Server Action input validation in fixture | Low | Low | Fixture is demo-only; production apps must implement their own validation |
 
 ### Operational Risks
 
 | Risk | Severity | Likelihood | Mitigation |
 |------|----------|------------|------------|
-| CI/CD pipeline not configured for Bun tests | Medium | Confirmed | Add Bun installation step and test job to CI workflow |
-| Bun version pinning | Low | Low | Require Bun >= 1.1 in documentation; plugin API is stable |
+| Bun runtime not available in CI/CD | Medium | Medium | Add Bun installation step to CI workflow (Task 4) |
+| Full monorepo build OOM on eslint-plugin-react-hooks | Low | High (pre-existing) | This is a pre-existing infrastructure issue unrelated to react-server-dom-bun; targeted builds work fine |
+| No monitoring or health checks in fixture | Low | Low | Fixture is a development demo; production deployments should add monitoring |
 
 ### Integration Risks
 
 | Risk | Severity | Likelihood | Mitigation |
 |------|----------|------------|------------|
-| Fork file resolution chain | Low | Low | `findNearestExistingForkFile` resolves correctly — verified by Flow and tests |
-| Rollup build system compatibility | Low | Low | All 12 bundles compile — verified by full build |
-| Zero regressions in existing packages | None | Verified | 221/221 existing tests pass (turbopack + webpack) |
+| Real Bun.build() manifest format mismatch | Medium | Medium | Current tests use BunMock; real integration testing required (Task 5) |
+| `__bun_require__` behavior differences in actual Bun runtime vs mocks | Medium | Low | BunMock closely follows TurbopackMock patterns; validate with real Bun runtime |
+| Cross-platform Bun compatibility (macOS/Linux/Windows) | Low | Low | Bun supports all major platforms; test on target CI platform |
 
 ---
 
-## 7. Repository Change Summary
+## File Inventory Summary
+
+### New Files Created (90 total)
+
+| Category | Count | LOC | Key Files |
+|----------|-------|-----|-----------|
+| Package source (server) | 7 | 1,498 | ReactFlightDOMServerNode.js (709), ReactFlightDOMServerEdge.js (326), ReactFlightDOMServerBrowser.js (270) |
+| Package source (client) | 11 | 1,177 | ReactFlightDOMClientBrowser.js (292), ReactFlightClientConfigBundlerBun.js (281), ReactFlightDOMClientEdge.js (255) |
+| Package source (shared) | 2 | 400 | ReactFlightBunReferences.js (360), ReactFlightImportMetadata.js (40) |
+| Bun plugin | 1 | 555 | plugin.js — RSC directive detection via Bun.build() API |
+| Root entries & guards | 14 | 170 | client/server/static × browser/edge/node + guard files |
+| NPM adapters | 13 | 134 | CJS adapters with NODE_ENV dev/prod bundle selection |
+| Tests | 7 | 3,374 | 6 test suites (96 tests) + BunMock.js mock utility |
+| Package config & docs | 2 | ~450 | package.json, README.md |
+| Fork files (react-server) | 6 | 113 | ReactFlightServerConfig + ReactServerStreamConfig for 3 targets |
+| Fork files (react-client) | 3 | 60 | ReactFlightClientConfig for 3 targets |
+| Fixture application | 19 | 1,579 | server.js, App.js, Counter.js, Form.js, smoke.test.js |
+| Build system (modified) | 4 | ~225 | bundles.js, inlinedHostConfigs.js, .eslintrc.js, environment.js |
+| Documentation artifacts | 2 | ~1,008 | Technical Specifications.md, Project Guide.md (blitzy/) |
 
 ### Git Statistics
-- **Branch**: `blitzy-c922176a-d9b2-41b9-8d4e-1b06d0a6a9e6`
-- **Total commits**: 66
-- **Files changed**: 89
-- **Lines added**: 8,635
-- **Lines removed**: 0
-- **File types**: 82 .js, 2 .json, 1 .sh, 1 .md, 1 .html
-
-### Files by Category
-| Category | Files | LOC |
-|----------|-------|-----|
-| Package source (server + client + shared + references + plugin) | 20 | 3,599 |
-| Package tests | 7 | 1,591 |
-| Package root entries & guards | 14 | 725 |
-| npm CJS adapters | 13 | 134 |
-| Package manifest + README | 2 | 94 |
-| Fork files (react-server + react-client) | 9 | 173 |
-| Fixture application | 18 | ~1,600 |
-| Build system modifications | 4 | ~203 |
-| Blitzy documentation | 2 | ~1,031 |
-| **Total** | **89** | **~8,635** |
-
-### Existing Files Modified
-| File | Change |
-|------|--------|
-| `scripts/rollup/bundles.js` | +76 lines — 6 new bundle entries (server.browser/node/edge, client.browser/node/edge) |
-| `scripts/shared/inlinedHostConfigs.js` | +122 lines — 3 new host configs (dom-browser-bun, dom-node-bun, dom-edge-bun) |
-| `.eslintrc.js` | +8 lines — Added react-server-dom-bun to lint config with `__bun_require__`/`__bun_load__` globals |
-| `scripts/flow/environment.js` | +5 lines — Added `__bun_load__` and `__bun_require__` Flow declarations |
+- **Branch:** `blitzy-c922176a-d9b2-41b9-8d4e-1b06d0a6a9e6`
+- **Commits:** 69 (all by Blitzy Agent)
+- **Files changed:** 90
+- **Lines added:** 10,654
+- **Lines removed:** 0 (all new code)
 
 ---
 
-## 8. Implementation Completeness Matrix
+## Validation Gate Summary
 
-| AAP Group | Required Files | Created | Status |
-|-----------|---------------|---------|--------|
-| Group 1: Core Package Structure | 15 | 15 | ✅ Complete |
-| Group 2: Server Implementation | 7 | 7 | ✅ Complete |
-| Group 3: Client Implementation | 11 | 11 | ✅ Complete |
-| Group 4: Shared & References | 2 | 2 | ✅ Complete |
-| Group 5: npm Adapters | 13 | 13 | ✅ Complete |
-| Group 6: Fork Files | 9 | 9 | ✅ Complete |
-| Group 7: Build System Integration | 4 modified | 4 modified | ✅ Complete |
-| Group 8: Tests | 7 | 7 | ✅ Complete (coverage gap) |
-| Group 9: Fixture Application | 14 | 18 (4 extra) | ✅ Complete |
+| # | Gate | Command | Pass Criteria | Status |
+|---|------|---------|---------------|--------|
+| 1 | Type checking | `node scripts/tasks/flow.js dom-{browser,node,edge}-bun` | Zero errors | ✅ Pass |
+| 2 | Lint + format | `node scripts/tasks/linc.js` | Zero violations | ❌ 8 errors (test files) |
+| 3 | Package tests | `node scripts/jest/jest-cli.js --ci packages/react-server-dom-bun` | All pass, 85%+ coverage | ✅ 96/96 pass, 91.11% |
+| 4 | Build | `RELEASE_CHANNEL=experimental node scripts/rollup/build.js react-server-dom-bun/` | Zero errors, bundles emitted | ✅ 12 bundles |
+| 5 | Fixture starts | `cd fixtures/flight-bun && bun run dev` | HTTP 200 on localhost:3001 | ✅ Pass (agent-verified) |
+| 6 | E2E tests | `cd fixtures/flight-bun && npx playwright test` | All Playwright tests pass | ✅ 1/1 pass (agent-verified) |
+| 7 | Regression | `node scripts/jest/jest-cli.js --ci packages/react-server-dom-{turbopack,webpack}` | Zero failures | ✅ Turbopack 17/17, Webpack 204/204 |
 
-All files specified in the AAP have been created. The fixture includes 4 additional files beyond the AAP specification (server/global.js, server/region.js, server/bun-rsc-register.js, src/index.js) that implement the two-server architecture pattern matching the existing flight fixtures.
+**Gates Passing: 6/7** (lint gate has 8 minor errors requiring ~1 hour to fix)
