@@ -174,19 +174,19 @@ exports.serverExports = function serverExports(moduleExports) {
     };
   }
 
-  if (typeof exports === 'function') {
+  if (typeof moduleExports === 'function') {
     // The module exports a function directly,
     registerServerReference(
-      (exports: any),
+      (moduleExports: any),
       idx,
       // Represents the whole Module object instead of a particular import.
       null,
     );
   } else {
-    const keys = Object.keys(exports);
+    const keys = Object.keys(moduleExports);
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];
-      const value = exports[keys[i]];
+      const value = moduleExports[keys[i]];
       if (typeof value === 'function') {
         registerServerReference((value: any), idx, key);
       }

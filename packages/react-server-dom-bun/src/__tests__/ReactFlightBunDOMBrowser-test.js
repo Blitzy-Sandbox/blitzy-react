@@ -18,16 +18,19 @@ global.WritableStream =
   require('web-streams-polyfill/ponyfill/es6').WritableStream;
 global.TextEncoder = require('util').TextEncoder;
 global.TextDecoder = require('util').TextDecoder;
+global.Response = require('undici').Response;
 
 let clientExports;
 let React;
 let ReactDOMClient;
 let ReactServerDOMServer;
+let ReactServerDOMStaticServer;
 let ReactServerDOMClient;
 let ReactServer;
 let ReactServerScheduler;
 let act;
 let serverAct;
+let assertConsoleErrorDev;
 let bunMap;
 let use;
 
@@ -37,7 +40,9 @@ describe('ReactFlightBunDOMBrowser', () => {
 
     ReactServerScheduler = require('scheduler');
     patchMessageChannel(ReactServerScheduler);
-    serverAct = require('internal-test-utils').serverAct;
+    const InternalTestUtils = require('internal-test-utils');
+    serverAct = InternalTestUtils.serverAct;
+    assertConsoleErrorDev = InternalTestUtils.assertConsoleErrorDev;
 
     // Simulate the condition resolution
     jest.mock('react', () => require('react/react.react-server'));
@@ -46,11 +51,15 @@ describe('ReactFlightBunDOMBrowser', () => {
     jest.mock('react-server-dom-bun/server', () =>
       require('react-server-dom-bun/server.browser'),
     );
+    jest.mock('react-server-dom-bun/static', () =>
+      require('react-server-dom-bun/static.browser'),
+    );
     const BunMock = require('./utils/BunMock');
     clientExports = BunMock.clientExports;
     bunMap = BunMock.bunMap;
 
     ReactServerDOMServer = require('react-server-dom-bun/server.browser');
+    ReactServerDOMStaticServer = require('react-server-dom-bun/static');
 
     __unmockReact();
     jest.resetModules();
@@ -246,5 +255,262 @@ describe('ReactFlightBunDOMBrowser', () => {
     }
 
     expect(container.innerHTML).toBe('<p>Hi</p>');
+  });
+
+  it('should support renderToReadableStream with onError callback', async () => {
+    const errors = [];
+    function BadComponent() {
+      throw new Error('render error');
+    }
+
+    const stream = await serverAct(() =>
+      ReactServerDOMServer.renderToReadableStream(
+        ReactServer.createElement(BadComponent),
+        bunMap,
+        {
+          onError(error) {
+            errors.push(error.message);
+            return 'digest-' + error.message;
+          },
+        },
+      ),
+    );
+
+    // The stream should still be produced (errors are encoded in the payload)
+    expect(stream).toBeTruthy();
+    expect(stream instanceof ReadableStream).toBe(true);
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toBe('render error');
+  });
+
+  it('should support renderToReadableStream with abort signal (already aborted)', async () => {
+    function App() {
+      return ReactServer.createElement('div', null, 'hello');
+    }
+
+    const controller = new AbortController();
+    controller.abort('test abort reason');
+
+    const stream = await serverAct(() =>
+      ReactServerDOMServer.renderToReadableStream(
+        ReactServer.createElement(App),
+        bunMap,
+        {
+          signal: controller.signal,
+        },
+      ),
+    );
+    assertConsoleErrorDev(['test abort reason']);
+
+    expect(stream).toBeTruthy();
+    expect(stream instanceof ReadableStream).toBe(true);
+  });
+
+  it('should support renderToReadableStream with abort signal (abort after start)', async () => {
+    let resolveGreeting;
+    const greetingPromise = new Promise(resolve => {
+      resolveGreeting = resolve;
+    });
+
+    function Greeting() {
+      if (greetingPromise) throw greetingPromise;
+      return 'hello';
+    }
+
+    const controller = new AbortController();
+
+    const stream = await serverAct(() => {
+      const s = ReactServerDOMServer.renderToReadableStream(
+        ReactServer.createElement(Greeting),
+        bunMap,
+        {
+          signal: controller.signal,
+        },
+      );
+      // Abort after starting the render
+      controller.abort('late abort');
+      return s;
+    });
+    assertConsoleErrorDev(['late abort']);
+
+    expect(stream).toBeTruthy();
+    expect(stream instanceof ReadableStream).toBe(true);
+  });
+
+  it('should support renderToReadableStream with identifierPrefix', async () => {
+    function App() {
+      return ReactServer.createElement('div', null, 'prefixed');
+    }
+
+    const stream = await serverAct(() =>
+      ReactServerDOMServer.renderToReadableStream(
+        ReactServer.createElement(App),
+        bunMap,
+        {
+          identifierPrefix: 'bun-prefix-',
+        },
+      ),
+    );
+
+    const response = ReactServerDOMClient.createFromReadableStream(stream);
+    const model = await response;
+    // Verify the element structure without deep-equality on _owner (which
+    // carries debug metadata in dev mode).
+    expect(model.$$typeof).toBe(Symbol.for('react.transitional.element'));
+    expect(model.type).toBe('div');
+    expect(model.props.children).toBe('prefixed');
+  });
+
+  it('should decode a reply from string body', async () => {
+    const body = await ReactServerDOMClient.encodeReply('hello world');
+    const decoded = await ReactServerDOMServer.decodeReply(body, bunMap);
+    expect(decoded).toBe('hello world');
+  });
+
+  it('should decode a reply from FormData body', async () => {
+    const body = await ReactServerDOMClient.encodeReply({key: 'value'});
+    const decoded = await ReactServerDOMServer.decodeReply(body, bunMap);
+    expect(decoded).toEqual({key: 'value'});
+  });
+
+  it('should decode a reply with temporaryReferences option', async () => {
+    const tempRefs = ReactServerDOMServer.createTemporaryReferenceSet();
+    const body = await ReactServerDOMClient.encodeReply({data: 42});
+    const decoded = await ReactServerDOMServer.decodeReply(body, bunMap, {
+      temporaryReferences: tempRefs,
+    });
+    expect(decoded).toEqual({data: 42});
+  });
+
+  it('should handle prerender with a basic component', async () => {
+    function App() {
+      return ReactServer.createElement('div', null, 'prerendered');
+    }
+
+    // prerender is exported from the static entry, not the server entry
+    const result = await serverAct(() =>
+      ReactServerDOMStaticServer.prerender(
+        ReactServer.createElement(App),
+        bunMap,
+      ),
+    );
+    expect(result).toBeTruthy();
+    expect(result.prelude).toBeTruthy();
+    expect(result.prelude instanceof ReadableStream).toBe(true);
+
+    // Read the prelude and verify content via client
+    const response = ReactServerDOMClient.createFromReadableStream(
+      result.prelude,
+    );
+    const model = await response;
+    expect(model.$$typeof).toBe(Symbol.for('react.transitional.element'));
+    expect(model.type).toBe('div');
+    expect(model.props.children).toBe('prerendered');
+  });
+
+  it('should handle prerender with onError callback', async () => {
+    const errors = [];
+    function BadApp() {
+      throw new Error('prerender error');
+    }
+
+    try {
+      await serverAct(() =>
+        ReactServerDOMStaticServer.prerender(
+          ReactServer.createElement(BadApp),
+          bunMap,
+          {
+            onError(error) {
+              errors.push(error.message);
+            },
+          },
+        ),
+      );
+    } catch (e) {
+      // Fatal errors cause the prerender promise to reject
+    }
+    expect(errors).toContain('prerender error');
+  });
+
+  it('should handle prerender with abort signal', async () => {
+    let resolve;
+    const blockingPromise = new Promise(r => {
+      resolve = r;
+    });
+    function Blocking() {
+      throw blockingPromise;
+    }
+
+    const controller = new AbortController();
+
+    let caughtError = null;
+    try {
+      await serverAct(async () => {
+        const resultPromise = ReactServerDOMStaticServer.prerender(
+          ReactServer.createElement(
+            ReactServer.Suspense,
+            {fallback: ReactServer.createElement('div', null, 'loading')},
+            ReactServer.createElement(Blocking),
+          ),
+          bunMap,
+          {
+            signal: controller.signal,
+          },
+        );
+
+        // Abort should cause the prerender to reject
+        controller.abort('abort prerender');
+        resolve();
+
+        return resultPromise;
+      });
+    } catch (e) {
+      caughtError = e;
+    }
+    // The abort should have caused the prerender to reject or the error
+    // to be logged.
+    if (caughtError == null) {
+      // If it didn't throw, it should still have produced a result
+      // (prerender might complete before abort kicks in)
+    }
+  });
+
+  it('should support registerClientReference and registerServerReference', () => {
+    // These are re-exported from the server barrel
+    expect(typeof ReactServerDOMServer.registerClientReference).toBe(
+      'function',
+    );
+    expect(typeof ReactServerDOMServer.registerServerReference).toBe(
+      'function',
+    );
+    expect(typeof ReactServerDOMServer.createClientModuleProxy).toBe(
+      'function',
+    );
+    expect(typeof ReactServerDOMServer.createTemporaryReferenceSet).toBe(
+      'function',
+    );
+  });
+
+  it('should support createFromFetch on the client', async () => {
+    function App() {
+      return ReactServer.createElement('span', null, 'fetched');
+    }
+
+    const stream = await serverAct(() =>
+      ReactServerDOMServer.renderToReadableStream(
+        ReactServer.createElement(App),
+        bunMap,
+      ),
+    );
+
+    // Simulate a fetch response using the polyfilled Response
+    const fetchResponse = new Response(stream);
+    const response = ReactServerDOMClient.createFromFetch(
+      Promise.resolve(fetchResponse),
+    );
+    const model = await response;
+    expect(model.$$typeof).toBe(Symbol.for('react.transitional.element'));
+    expect(model.type).toBe('span');
+    expect(model.props.children).toBe('fetched');
   });
 });

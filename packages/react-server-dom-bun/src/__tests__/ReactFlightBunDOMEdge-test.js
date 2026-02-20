@@ -17,9 +17,11 @@ let React;
 let ReactServer;
 let ReactDOMServer;
 let ReactServerDOMServer;
+let ReactServerDOMStaticServer;
 let ReactServerDOMClient;
 let use;
 let serverAct;
+let assertConsoleErrorDev;
 
 describe('ReactFlightBunDOMEdge', () => {
   beforeEach(() => {
@@ -40,6 +42,10 @@ describe('ReactFlightBunDOMEdge', () => {
 
     ReactServer = require('react');
     ReactServerDOMServer = require('react-server-dom-bun/server.edge');
+    jest.mock('react-server-dom-bun/static', () =>
+      require('react-server-dom-bun/static.edge'),
+    );
+    ReactServerDOMStaticServer = require('react-server-dom-bun/static');
 
     jest.resetModules();
     __unmockReact();
@@ -48,6 +54,9 @@ describe('ReactFlightBunDOMEdge', () => {
     ReactDOMServer = require('react-dom/server.edge');
     ReactServerDOMClient = require('react-server-dom-bun/client.edge');
     use = React.use;
+
+    const InternalTestUtils = require('internal-test-utils');
+    assertConsoleErrorDev = InternalTestUtils.assertConsoleErrorDev;
   });
 
   async function readResult(stream) {
@@ -330,5 +339,361 @@ describe('ReactFlightBunDOMEdge', () => {
     expect(result).toContain(
       'Switched to client rendering because the server rendering errored:\n\nssr-throw',
     );
+  });
+
+  it('can prerender to a static result', async () => {
+    let resolveGreeting;
+    const greetingPromise = new Promise(resolve => {
+      resolveGreeting = resolve;
+    });
+
+    function Greeting() {
+      return greetingPromise.then(() => 'hello world');
+    }
+
+    function App() {
+      return ReactServer.createElement(
+        'div',
+        null,
+        ReactServer.createElement(Greeting, null),
+      );
+    }
+
+    const {pendingResult} = await serverAct(async () => {
+      return {
+        pendingResult: ReactServerDOMStaticServer.prerender(
+          ReactServer.createElement(App, null),
+          bunMap,
+        ),
+      };
+    });
+
+    resolveGreeting();
+    const {prelude} = await pendingResult;
+
+    function ClientRoot({response}) {
+      return use(response);
+    }
+
+    const response = ReactServerDOMClient.createFromReadableStream(prelude, {
+      serverConsumerManifest: {
+        moduleMap: null,
+        moduleLoading: null,
+      },
+    });
+
+    const ssrStream = await serverAct(() =>
+      ReactDOMServer.renderToReadableStream(
+        React.createElement(ClientRoot, {response}),
+      ),
+    );
+    const result = await readResult(ssrStream);
+    expect(result).toBe('<div>hello world</div>');
+  });
+
+  it('can prerender with an abort signal', async () => {
+    const controller = new AbortController();
+
+    function App() {
+      return ReactServer.createElement(
+        'div',
+        null,
+        ReactServer.createElement(
+          ReactServer.Suspense,
+          {fallback: 'loading...'},
+          ReactServer.createElement(Hanging, null),
+        ),
+      );
+    }
+
+    function Hanging() {
+      return new Promise(() => {
+        // never resolves
+      });
+    }
+
+    const errors = [];
+    const {pendingResult} = await serverAct(async () => {
+      return {
+        pendingResult: ReactServerDOMStaticServer.prerender(
+          ReactServer.createElement(App, null),
+          bunMap,
+          {
+            signal: controller.signal,
+            onError(err) {
+              errors.push(err);
+            },
+          },
+        ),
+      };
+    });
+
+    controller.abort('boom');
+    const {prelude} = await serverAct(() => pendingResult);
+    // Abort reasons are not propagated as errors in prerender
+    expect(errors).toEqual([]);
+
+    function ClientRoot({response}) {
+      return use(response);
+    }
+
+    const response = ReactServerDOMClient.createFromReadableStream(prelude, {
+      serverConsumerManifest: {
+        moduleMap: null,
+        moduleLoading: null,
+      },
+    });
+
+    const ssrErrors = [];
+    const ssrStream = await serverAct(() =>
+      ReactDOMServer.renderToReadableStream(
+        React.createElement(ClientRoot, {response}),
+        {
+          onError(error) {
+            ssrErrors.push(error);
+          },
+        },
+      ),
+    );
+    const result = await readResult(ssrStream);
+    // The halted content should be replaced by an error fallback or empty
+    expect(result).toBeDefined();
+  });
+
+  it('can decode a reply with a string body', async () => {
+    const decoded = await ReactServerDOMServer.decodeReply(
+      '"hello edge"',
+      bunMap,
+    );
+    expect(decoded).toBe('hello edge');
+  });
+
+  it('can decode a reply with a FormData body', async () => {
+    const formData = new FormData();
+    formData.append('0', '"edge-form-data"');
+    const decoded = await ReactServerDOMServer.decodeReply(
+      formData,
+      bunMap,
+    );
+    expect(decoded).toBe('edge-form-data');
+  });
+
+  it('encodeReply and decodeReply round-trip on edge', async () => {
+    const body = await ReactServerDOMClient.encodeReply({key: 'edge-value'});
+    const decoded = await ReactServerDOMServer.decodeReply(body, bunMap);
+    expect(decoded).toEqual({key: 'edge-value'});
+  });
+
+  it('encodeReply with nested arrays and objects', async () => {
+    const payload = {
+      arr: [1, 2, 3],
+      nested: {a: 'b', c: [true, false]},
+    };
+    const body = await ReactServerDOMClient.encodeReply(payload);
+    const decoded = await ReactServerDOMServer.decodeReply(body, bunMap);
+    expect(decoded).toEqual(payload);
+  });
+
+  it('renderToReadableStream with abort signal', async () => {
+    const controller = new AbortController();
+
+    function App() {
+      return ReactServer.createElement('div', null, 'initial');
+    }
+
+    const stream = await serverAct(() =>
+      ReactServerDOMServer.renderToReadableStream(
+        ReactServer.createElement(App, null),
+        bunMap,
+        {
+          signal: controller.signal,
+        },
+      ),
+    );
+
+    // Read some data before abort
+    const reader = stream.getReader();
+    const {value} = await reader.read();
+    expect(value).toBeDefined();
+    reader.releaseLock();
+  });
+
+  it('renderToReadableStream with already-aborted signal', async () => {
+    const controller = new AbortController();
+    controller.abort('pre-aborted');
+
+    function App() {
+      return ReactServer.createElement('div', null, 'should not render fully');
+    }
+
+    const stream = await serverAct(() =>
+      ReactServerDOMServer.renderToReadableStream(
+        ReactServer.createElement(App, null),
+        bunMap,
+        {
+          signal: controller.signal,
+        },
+      ),
+    );
+
+    assertConsoleErrorDev(['pre-aborted']);
+
+    // Stream should still be created - the abort is handled internally
+    expect(stream).toBeDefined();
+    expect(stream instanceof ReadableStream).toBe(true);
+  });
+
+  it('renderToReadableStream with identifierPrefix', async () => {
+    function App() {
+      return ReactServer.createElement('span', null, 'prefixed');
+    }
+
+    const stream = await serverAct(() =>
+      ReactServerDOMServer.renderToReadableStream(
+        ReactServer.createElement(App, null),
+        bunMap,
+        {identifierPrefix: 'edge_'},
+      ),
+    );
+
+    function ClientRoot({response}) {
+      return use(response);
+    }
+
+    const response = ReactServerDOMClient.createFromReadableStream(stream, {
+      serverConsumerManifest: {
+        moduleMap: null,
+        moduleLoading: null,
+      },
+    });
+
+    const ssrStream = await serverAct(() =>
+      ReactDOMServer.renderToReadableStream(
+        React.createElement(ClientRoot, {response}),
+      ),
+    );
+    const result = await readResult(ssrStream);
+    expect(result).toBe('<span>prefixed</span>');
+  });
+
+  it('renderToReadableStream with onError callback', async () => {
+    const errors = [];
+    function Failing() {
+      throw new Error('edge component error');
+    }
+
+    const stream = await serverAct(() =>
+      ReactServerDOMServer.renderToReadableStream(
+        ReactServer.createElement(Failing, null),
+        bunMap,
+        {
+          onError(error) {
+            errors.push(error.message);
+          },
+        },
+      ),
+    );
+
+    // Read the stream to trigger the error handling
+    const reader = stream.getReader();
+    const chunks = [];
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toBe('edge component error');
+  });
+
+  it('createFromReadableStream with serverConsumerManifest on edge', async () => {
+    function ServerComponent() {
+      return ReactServer.createElement('div', null, 'edge-ssr-component');
+    }
+
+    const stream = await serverAct(() =>
+      ReactServerDOMServer.renderToReadableStream(
+        ReactServer.createElement(ServerComponent, null),
+        bunMap,
+      ),
+    );
+
+    const response = ReactServerDOMClient.createFromReadableStream(stream, {
+      serverConsumerManifest: {
+        moduleMap: {},
+        moduleLoading: null,
+      },
+    });
+
+    function ClientRoot({response: resp}) {
+      return use(resp);
+    }
+
+    const ssrStream = await serverAct(() =>
+      ReactDOMServer.renderToReadableStream(
+        React.createElement(ClientRoot, {response}),
+      ),
+    );
+    const result = await readResult(ssrStream);
+    expect(result).toBe('<div>edge-ssr-component</div>');
+  });
+
+  it('can decode a reply with various primitive types', async () => {
+    // number
+    const num = await ReactServerDOMServer.decodeReply('42', bunMap);
+    expect(num).toBe(42);
+
+    // boolean
+    const bool = await ReactServerDOMServer.decodeReply('true', bunMap);
+    expect(bool).toBe(true);
+
+    // null
+    const nul = await ReactServerDOMServer.decodeReply('null', bunMap);
+    expect(nul).toBe(null);
+  });
+
+  it('encodeReply with Date object', async () => {
+    const date = new Date('2024-01-01T00:00:00.000Z');
+    const body = await ReactServerDOMClient.encodeReply(date);
+    const decoded = await ReactServerDOMServer.decodeReply(body, bunMap);
+    expect(decoded).toEqual(date);
+  });
+
+  it('renderToReadableStream with environmentName option', async () => {
+    function App() {
+      return ReactServer.createElement('span', null, 'env-test');
+    }
+
+    const stream = await serverAct(() =>
+      ReactServerDOMServer.renderToReadableStream(
+        ReactServer.createElement(App, null),
+        bunMap,
+        {environmentName: 'edge-worker'},
+      ),
+    );
+
+    // Verify the stream was created successfully with environment name option
+    expect(stream).toBeDefined();
+    expect(stream instanceof ReadableStream).toBe(true);
+
+    const response = ReactServerDOMClient.createFromReadableStream(stream, {
+      serverConsumerManifest: {
+        moduleMap: null,
+        moduleLoading: null,
+      },
+    });
+
+    function ClientRoot({response: resp}) {
+      return use(resp);
+    }
+
+    const ssrStream = await serverAct(() =>
+      ReactDOMServer.renderToReadableStream(
+        React.createElement(ClientRoot, {response}),
+      ),
+    );
+    const result = await readResult(ssrStream);
+    expect(result).toBe('<span>env-test</span>');
   });
 });

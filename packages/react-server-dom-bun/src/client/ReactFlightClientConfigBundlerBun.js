@@ -36,12 +36,20 @@ import {
 
 import hasOwnProperty from 'shared/hasOwnProperty';
 
+// ServerConsumerModuleMap (also called SSRModuleMap in some contexts) maps
+// client module IDs and export names to their SSR-equivalent manifest entries.
+// This allows the server during SSR to resolve Client References back to actual
+// server-side module implementations. When null, references pass through as-is
+// (browser-only rendering without SSR).
 export type ServerConsumerModuleMap = null | {
   [clientId: string]: {
     [clientExportName: string]: ClientReferenceManifestEntry,
   },
 };
 
+// ServerManifest maps server reference IDs to their manifest entries,
+// enabling the client to resolve Server References (functions marked with
+// 'use server') back to callable server endpoints.
 export type ServerManifest = {
   [id: string]: ImportManifestEntry,
 };
@@ -177,10 +185,13 @@ function requireAsyncModule(id: string): null | Thenable<any> {
   }
 }
 
-// Bun will return cached promises for the same chunk.
-// We still want to keep track of which chunks we have already instrumented
-// and which chunks have already been loaded until Bun returns instrumented
-// thenables directly.
+// Bun's module loader returns cached promises for the same chunk.
+// We track two things with WeakSets for efficient garbage collection:
+// 1. instrumentedChunks — chunks we've attached .then handlers to for status tracking
+// 2. loadedChunks — chunks whose promises have fully resolved
+// This avoids re-instrumenting the same chunk and allows preloadModule to skip
+// already-loaded chunks. WeakSets are used so chunk thenables can be GC'd
+// when no longer referenced.
 const instrumentedChunks: WeakSet<Thenable<any>> = new WeakSet();
 const loadedChunks: WeakSet<Thenable<any>> = new WeakSet();
 
