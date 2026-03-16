@@ -63,7 +63,8 @@ export type HookType =
   | 'useCacheRefresh'
   | 'useOptimistic'
   | 'useFormState'
-  | 'useActionState';
+  | 'useActionState'
+  | 'useFeature';
 
 export type ContextDependency<T> = {
   context: ReactContext<T>,
@@ -454,6 +455,10 @@ export type Dispatcher = {
     initialState: Awaited<S>,
     permalink?: string,
   ) => [Awaited<S>, (P) => void, boolean],
+  useFeature: <S, A>(
+    passthrough: S,
+    reducer: ?(S, A) => S,
+  ) => [S, (A) => void],
 };
 
 export type AsyncDispatcher = {
