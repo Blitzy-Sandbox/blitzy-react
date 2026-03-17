@@ -440,4 +440,185 @@ describe('ReactDOMFeature', () => {
       '<div><span>Parent: world</span><span>Child: world</span></div>',
     );
   });
+
+  // ---------------------------------------------------------------------------
+  // Negated gate: behavior when enableFeature is disabled
+  // ---------------------------------------------------------------------------
+
+  // @gate !enableFeature
+  it('Feature component and APIs are undefined when flag is disabled', () => {
+    expect(Feature).toBe(undefined);
+    expect(useFeature).toBe(undefined);
+  });
+
+  // ---------------------------------------------------------------------------
+  // DOM attribute handling — data-feature
+  // ---------------------------------------------------------------------------
+
+  // @gate enableFeature
+  it('sets data-feature attribute with string value', async () => {
+    function App() {
+      return <div feature="test-value">Content</div>;
+    }
+
+    const root = ReactDOMClient.createRoot(container);
+    await act(() => root.render(<App />));
+    const div = container.firstChild;
+    expect(div.getAttribute('data-feature')).toBe('test-value');
+  });
+
+  // @gate enableFeature
+  it('sets data-feature attribute with object value via JSON serialization', async () => {
+    const obj = {key: 'value', nested: {a: 1}};
+    function App() {
+      return <div feature={obj}>Content</div>;
+    }
+
+    const root = ReactDOMClient.createRoot(container);
+    await act(() => root.render(<App />));
+    const div = container.firstChild;
+    expect(div.getAttribute('data-feature')).toBe(JSON.stringify(obj));
+  });
+
+  // @gate enableFeature
+  it('removes data-feature attribute when value is null', async () => {
+    let setValue;
+    function App() {
+      const [val, setVal] = useState('initial');
+      setValue = setVal;
+      return <div feature={val}>Content</div>;
+    }
+
+    const root = ReactDOMClient.createRoot(container);
+    await act(() => root.render(<App />));
+    expect(container.firstChild.getAttribute('data-feature')).toBe('initial');
+
+    // Set to null — attribute should be removed
+    await act(() => setValue(null));
+    expect(container.firstChild.hasAttribute('data-feature')).toBe(false);
+  });
+
+  // @gate enableFeature
+  it('removes data-feature attribute when value is undefined', async () => {
+    let setValue;
+    function App() {
+      const [val, setVal] = useState('initial');
+      setValue = setVal;
+      return <div feature={val}>Content</div>;
+    }
+
+    const root = ReactDOMClient.createRoot(container);
+    await act(() => root.render(<App />));
+    expect(container.firstChild.getAttribute('data-feature')).toBe('initial');
+
+    // Set to undefined — attribute should be removed
+    await act(() => setValue(undefined));
+    expect(container.firstChild.hasAttribute('data-feature')).toBe(false);
+  });
+
+  // ---------------------------------------------------------------------------
+  // SSR / Hydration tests
+  // ---------------------------------------------------------------------------
+
+  // @gate enableFeature
+  it('Feature component renders children via server-side renderToString', async () => {
+    const ReactDOMServer = require('react-dom/server');
+
+    function App() {
+      return (
+        <Feature mode="active">
+          <div>SSR Content</div>
+        </Feature>
+      );
+    }
+
+    const html = ReactDOMServer.renderToString(<App />);
+    expect(html).toContain('SSR Content');
+  });
+
+  // @gate enableFeature
+  it('Feature component with inactive mode renders nothing on server', async () => {
+    const ReactDOMServer = require('react-dom/server');
+
+    function App() {
+      return (
+        <Feature mode="inactive">
+          <div>Hidden Content</div>
+        </Feature>
+      );
+    }
+
+    const html = ReactDOMServer.renderToString(<App />);
+    // inactive Feature should not render children on the server
+    expect(html).not.toContain('Hidden Content');
+  });
+
+  // @gate enableFeature
+  it('useFeature returns passthrough value on server', async () => {
+    const ReactDOMServer = require('react-dom/server');
+
+    function App() {
+      const [state] = React.useFeature('server-value');
+      return <div>{state}</div>;
+    }
+
+    const html = ReactDOMServer.renderToString(<App />);
+    expect(html).toContain('server-value');
+  });
+
+  // @gate enableFeature
+  it('hydrates Feature component without mismatch', async () => {
+    const ReactDOMServer = require('react-dom/server');
+
+    function App() {
+      return (
+        <Feature mode="active">
+          <div>Hydrated Content</div>
+        </Feature>
+      );
+    }
+
+    // Server-side render
+    container.innerHTML = ReactDOMServer.renderToString(<App />);
+    expect(container.textContent).toContain('Hydrated Content');
+
+    // Client-side hydrate
+    await act(() => {
+      ReactDOMClient.hydrateRoot(container, <App />);
+    });
+    expect(container.textContent).toContain('Hydrated Content');
+  });
+
+  // @gate enableFeature
+  it('SSR renders data-feature attribute matching client', async () => {
+    const ReactDOMServer = require('react-dom/server');
+
+    function App() {
+      return <div feature="ssr-test">Content</div>;
+    }
+
+    const html = ReactDOMServer.renderToString(<App />);
+    expect(html).toContain('data-feature');
+    expect(html).toContain('ssr-test');
+  });
+
+  // @gate enableFeature
+  it('SSR renders data-feature with object value as JSON', async () => {
+    const ReactDOMServer = require('react-dom/server');
+
+    const obj = {key: 'value'};
+    function App() {
+      return <div feature={obj}>Content</div>;
+    }
+
+    const html = ReactDOMServer.renderToString(<App />);
+    expect(html).toContain('data-feature');
+    // The server-rendered output HTML-escapes the JSON string in attribute values.
+    // Verify the data-feature attribute contains the JSON-serialized object by
+    // parsing the rendered output back into a DOM element.
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    const rendered = tempDiv.firstChild;
+    expect(rendered.getAttribute('data-feature')).toBe(JSON.stringify(obj));
+  });
 });

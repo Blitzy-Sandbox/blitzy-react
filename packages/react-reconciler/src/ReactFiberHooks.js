@@ -2043,24 +2043,39 @@ function mountFeature<S, A>(
   reducer: ?(S, A) => S,
 ): [S, (A) => void] {
   const hook = mountWorkInProgressHook();
+  if (enableFeature) {
+    hook.memoizedState = hook.baseState = passthrough;
+    const queue: UpdateQueue<S, A> = {
+      pending: null,
+      lanes: NoLanes,
+      dispatch: null,
+      // Feature state does not use the eager update optimization.
+      lastRenderedReducer: null,
+      lastRenderedState: null,
+    };
+    hook.queue = queue;
+    // This is different than the normal setState function.
+    const dispatch: A => void = (dispatchOptimisticSetState.bind(
+      null,
+      currentlyRenderingFiber,
+      true,
+      queue,
+    ): any);
+    queue.dispatch = dispatch;
+    return [passthrough, dispatch];
+  }
+  // When the feature is disabled, set up a minimal hook with a no-op dispatch
+  // to maintain consistent hook ordering.
   hook.memoizedState = hook.baseState = passthrough;
   const queue: UpdateQueue<S, A> = {
     pending: null,
     lanes: NoLanes,
     dispatch: null,
-    // Feature state does not use the eager update optimization.
     lastRenderedReducer: null,
     lastRenderedState: null,
   };
   hook.queue = queue;
-  // This is different than the normal setState function.
-  const dispatch: A => void = (dispatchOptimisticSetState.bind(
-    null,
-    currentlyRenderingFiber,
-    true,
-    queue,
-  ): any);
-  queue.dispatch = dispatch;
+  const dispatch = queue.dispatch = (noop: any);
   return [passthrough, dispatch];
 }
 

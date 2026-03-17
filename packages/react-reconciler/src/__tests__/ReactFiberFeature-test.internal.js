@@ -480,4 +480,15 @@ describe('ReactFiberFeature', () => {
     await waitForPaint(['Paint: updated', 'updated']);
     expect(root).toMatchRenderedOutput(<span prop="updated" />);
   });
+
+  // ---------------------------------------------------------------------------
+  // Negated gate: behavior when enableFeature is disabled
+  // ---------------------------------------------------------------------------
+
+  // @gate !enableFeature
+  it('useFeature is not exported when the feature flag is disabled', () => {
+    // When enableFeature is false, the entry point should not export useFeature.
+    // This verifies that the feature is properly gated at the API surface level.
+    expect(React.useFeature).toBe(undefined);
+  });
 });
