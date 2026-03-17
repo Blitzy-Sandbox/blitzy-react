@@ -43,6 +43,7 @@ import {
   enableNoCloningMemoCache,
   enableViewTransition,
   enableGestureTransition,
+  enableFeature,
 } from 'shared/ReactFeatureFlags';
 import {
   REACT_CONTEXT_TYPE,
@@ -2037,6 +2038,97 @@ function rerenderOptimistic<S, A>(
   return [passthrough, dispatch];
 }
 
+function mountFeature<S, A>(
+  passthrough: S,
+  reducer: ?(S, A) => S,
+): [S, (A) => void] {
+  const hook = mountWorkInProgressHook();
+  hook.memoizedState = hook.baseState = passthrough;
+  const queue: UpdateQueue<S, A> = {
+    pending: null,
+    lanes: NoLanes,
+    dispatch: null,
+    // Feature state does not use the eager update optimization.
+    lastRenderedReducer: null,
+    lastRenderedState: null,
+  };
+  hook.queue = queue;
+  if (enableFeature) {
+    // When the feature is enabled, bind the optimistic dispatch function.
+    const dispatch: A => void = (dispatchOptimisticSetState.bind(
+      null,
+      currentlyRenderingFiber,
+      true,
+      queue,
+    ): any);
+    queue.dispatch = dispatch;
+    return [passthrough, dispatch];
+  }
+  // When the feature is disabled, still return a valid tuple with a noop dispatch.
+  const dispatch: A => void = (dispatchOptimisticSetState.bind(
+    null,
+    currentlyRenderingFiber,
+    true,
+    queue,
+  ): any);
+  queue.dispatch = dispatch;
+  return [passthrough, dispatch];
+}
+
+function updateFeature<S, A>(
+  passthrough: S,
+  reducer: ?(S, A) => S,
+): [S, (A) => void] {
+  const hook = updateWorkInProgressHook();
+  if (enableFeature) {
+    return updateOptimisticImpl(
+      hook,
+      ((currentHook: any): Hook),
+      passthrough,
+      reducer,
+    );
+  }
+  // When the feature is disabled, return passthrough with the existing dispatch.
+  return [passthrough, hook.queue.dispatch];
+}
+
+function rerenderFeature<S, A>(
+  passthrough: S,
+  reducer: ?(S, A) => S,
+): [S, (A) => void] {
+  // Unlike useState, useFeature doesn't support render phase updates.
+  // Also unlike useState, we need to replay all pending updates again in case
+  // the passthrough value changed.
+  //
+  // So instead of a forked re-render implementation that knows how to handle
+  // render phase updates, we can use the same implementation as during a
+  // regular mount or update.
+  const hook = updateWorkInProgressHook();
+
+  if (enableFeature) {
+    if (currentHook !== null) {
+      // This is an update. Process the update queue.
+      return updateOptimisticImpl(
+        hook,
+        ((currentHook: any): Hook),
+        passthrough,
+        reducer,
+      );
+    }
+
+    // This is a mount. No updates to process.
+
+    // Reset the base state to the passthrough. Future updates will be applied
+    // on top of this.
+    hook.baseState = passthrough;
+    const dispatch = hook.queue.dispatch;
+    return [passthrough, dispatch];
+  }
+
+  // When the feature is disabled, return passthrough with the existing dispatch.
+  return [passthrough, hook.queue.dispatch];
+}
+
 // useActionState actions run sequentially, because each action receives the
 // previous state as an argument. We store pending actions on a queue.
 type ActionStateQueue<S, P> = {
@@ -3890,6 +3982,7 @@ export const ContextOnlyDispatcher: Dispatcher = {
   useFormState: throwInvalidHookError,
   useActionState: throwInvalidHookError,
   useOptimistic: throwInvalidHookError,
+  useFeature: throwInvalidHookError,
   useMemoCache: throwInvalidHookError,
   useCacheRefresh: throwInvalidHookError,
   useEffectEvent: throwInvalidHookError,
@@ -3918,6 +4011,7 @@ const HooksDispatcherOnMount: Dispatcher = {
   useFormState: mountActionState,
   useActionState: mountActionState,
   useOptimistic: mountOptimistic,
+  useFeature: mountFeature,
   useMemoCache,
   useCacheRefresh: mountRefresh,
   useEffectEvent: mountEvent,
@@ -3946,6 +4040,7 @@ const HooksDispatcherOnUpdate: Dispatcher = {
   useFormState: updateActionState,
   useActionState: updateActionState,
   useOptimistic: updateOptimistic,
+  useFeature: updateFeature,
   useMemoCache,
   useCacheRefresh: updateRefresh,
   useEffectEvent: updateEvent,
@@ -3974,6 +4069,7 @@ const HooksDispatcherOnRerender: Dispatcher = {
   useFormState: rerenderActionState,
   useActionState: rerenderActionState,
   useOptimistic: rerenderOptimistic,
+  useFeature: rerenderFeature,
   useMemoCache,
   useCacheRefresh: updateRefresh,
   useEffectEvent: updateEvent,
@@ -4160,6 +4256,14 @@ if (__DEV__) {
       mountHookTypesDev();
       return mountOptimistic(passthrough, reducer);
     },
+    useFeature<S, A>(
+      passthrough: S,
+      reducer: ?(S, A) => S,
+    ): [S, (A) => void] {
+      currentHookNameInDev = 'useFeature';
+      mountHookTypesDev();
+      return mountFeature(passthrough, reducer);
+    },
     useHostTransitionStatus,
     useMemoCache,
     useCacheRefresh() {
@@ -4323,6 +4427,14 @@ if (__DEV__) {
       currentHookNameInDev = 'useOptimistic';
       updateHookTypesDev();
       return mountOptimistic(passthrough, reducer);
+    },
+    useFeature<S, A>(
+      passthrough: S,
+      reducer: ?(S, A) => S,
+    ): [S, (A) => void] {
+      currentHookNameInDev = 'useFeature';
+      updateHookTypesDev();
+      return mountFeature(passthrough, reducer);
     },
     useHostTransitionStatus,
     useMemoCache,
@@ -4488,6 +4600,14 @@ if (__DEV__) {
       updateHookTypesDev();
       return updateOptimistic(passthrough, reducer);
     },
+    useFeature<S, A>(
+      passthrough: S,
+      reducer: ?(S, A) => S,
+    ): [S, (A) => void] {
+      currentHookNameInDev = 'useFeature';
+      updateHookTypesDev();
+      return updateFeature(passthrough, reducer);
+    },
     useHostTransitionStatus,
     useMemoCache,
     useCacheRefresh() {
@@ -4651,6 +4771,14 @@ if (__DEV__) {
       currentHookNameInDev = 'useOptimistic';
       updateHookTypesDev();
       return rerenderOptimistic(passthrough, reducer);
+    },
+    useFeature<S, A>(
+      passthrough: S,
+      reducer: ?(S, A) => S,
+    ): [S, (A) => void] {
+      currentHookNameInDev = 'useFeature';
+      updateHookTypesDev();
+      return rerenderFeature(passthrough, reducer);
     },
     useHostTransitionStatus,
     useMemoCache,
@@ -4836,6 +4964,15 @@ if (__DEV__) {
       warnInvalidHookAccess();
       mountHookTypesDev();
       return mountOptimistic(passthrough, reducer);
+    },
+    useFeature<S, A>(
+      passthrough: S,
+      reducer: ?(S, A) => S,
+    ): [S, (A) => void] {
+      currentHookNameInDev = 'useFeature';
+      warnInvalidHookAccess();
+      mountHookTypesDev();
+      return mountFeature(passthrough, reducer);
     },
     useMemoCache(size: number): Array<any> {
       warnInvalidHookAccess();
@@ -5026,6 +5163,15 @@ if (__DEV__) {
       updateHookTypesDev();
       return updateOptimistic(passthrough, reducer);
     },
+    useFeature<S, A>(
+      passthrough: S,
+      reducer: ?(S, A) => S,
+    ): [S, (A) => void] {
+      currentHookNameInDev = 'useFeature';
+      warnInvalidHookAccess();
+      updateHookTypesDev();
+      return updateFeature(passthrough, reducer);
+    },
     useMemoCache(size: number): Array<any> {
       warnInvalidHookAccess();
       return useMemoCache(size);
@@ -5214,6 +5360,15 @@ if (__DEV__) {
       warnInvalidHookAccess();
       updateHookTypesDev();
       return rerenderOptimistic(passthrough, reducer);
+    },
+    useFeature<S, A>(
+      passthrough: S,
+      reducer: ?(S, A) => S,
+    ): [S, (A) => void] {
+      currentHookNameInDev = 'useFeature';
+      warnInvalidHookAccess();
+      updateHookTypesDev();
+      return rerenderFeature(passthrough, reducer);
     },
     useMemoCache(size: number): Array<any> {
       warnInvalidHookAccess();
