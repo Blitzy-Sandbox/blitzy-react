@@ -48,8 +48,6 @@ import {getFormState} from './ReactFizzServer';
 
 import noop from 'shared/noop';
 
-import {enableFeature} from 'shared/ReactFeatureFlags';
-
 type BasicStateAction<S> = (S => S) | S;
 type Dispatch<A> = A => void;
 
@@ -608,9 +606,6 @@ function useFeature<S, A>(
   reducer: ?(S, A) => S,
 ): [S, (A) => void] {
   resolveCurrentlyRenderingComponent();
-  if (enableFeature) {
-    return [passthrough, unsupportedSetFeatureState];
-  }
   return [passthrough, unsupportedSetFeatureState];
 }
 

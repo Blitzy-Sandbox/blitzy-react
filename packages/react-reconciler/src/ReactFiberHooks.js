@@ -2053,18 +2053,7 @@ function mountFeature<S, A>(
     lastRenderedState: null,
   };
   hook.queue = queue;
-  if (enableFeature) {
-    // When the feature is enabled, bind the optimistic dispatch function.
-    const dispatch: A => void = (dispatchOptimisticSetState.bind(
-      null,
-      currentlyRenderingFiber,
-      true,
-      queue,
-    ): any);
-    queue.dispatch = dispatch;
-    return [passthrough, dispatch];
-  }
-  // When the feature is disabled, still return a valid tuple with a noop dispatch.
+  // This is different than the normal setState function.
   const dispatch: A => void = (dispatchOptimisticSetState.bind(
     null,
     currentlyRenderingFiber,
