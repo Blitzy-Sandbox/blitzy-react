@@ -36,6 +36,7 @@ import {
   enableSrcObject,
   enableFizzBlockingRender,
   enableViewTransition,
+  enableFeature,
 } from 'shared/ReactFeatureFlags';
 
 import type {
@@ -1811,6 +1812,28 @@ function pushAttribute(
     case 'xmlSpace':
       pushStringAttribute(target, 'xml:space', value);
       return;
+    case 'data-feature': {
+      if (enableFeature) {
+        // When the feature is enabled, handle object values by serializing
+        // them as JSON to match the client-side setFeature behavior which
+        // calls JSON.stringify for structured metadata.
+        if (typeof value === 'object') {
+          target.push(
+            attributeSeparator,
+            stringToChunk(name),
+            attributeAssign,
+            stringToChunk(escapeTextForBrowser(JSON.stringify((value: any)))),
+            attributeEnd,
+          );
+          return;
+        }
+        // Non-object values use standard string attribute serialization.
+        pushStringAttribute(target, name, value);
+        return;
+      }
+      // When the feature is disabled, fall through to default handling.
+    }
+    // falls through
     default:
       if (
         // shouldIgnoreAttribute
