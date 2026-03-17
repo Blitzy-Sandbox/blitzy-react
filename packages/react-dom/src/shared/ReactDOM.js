@@ -28,6 +28,7 @@ import {
   useFormStatus,
   useFormState,
 } from 'react-dom-bindings/src/shared/ReactDOMFormActions';
+import {setFeature} from 'react-dom-bindings/src/client/ReactDOMFeature';
 
 if (__DEV__) {
   if (
@@ -81,4 +82,5 @@ export {
   requestFormReset,
   useFormStatus,
   useFormState,
+  setFeature,
 };
