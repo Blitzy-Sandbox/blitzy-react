@@ -48,6 +48,7 @@ import type {UpdateQueue} from './ReactFiberClassUpdateQueue';
 import type {RootState} from './ReactFiberRoot';
 import type {TracingMarkerInstance} from './ReactFiberTracingMarkerComponent';
 import type {ViewTransitionState} from './ReactFiberViewTransitionComponent';
+import type {FeatureFiberState} from './ReactFiber[Feature]';
 
 import {
   markComponentRenderStarted,
@@ -3569,14 +3570,15 @@ function updateFeatureComponent(
   const pendingProps: FeatureProps = workInProgress.pendingProps;
   // Initialize stateNode on first render if not already set.
   if (workInProgress.stateNode === null) {
-    const instance = {
+    const instance: FeatureFiberState = {
       autoName: null,
       isActive: pendingProps.mode !== 'inactive',
     };
     workInProgress.stateNode = instance;
   } else {
     // Update isActive state based on current props.
-    workInProgress.stateNode.isActive = pendingProps.mode !== 'inactive';
+    const state: FeatureFiberState = workInProgress.stateNode;
+    state.isActive = pendingProps.mode !== 'inactive';
   }
   const nextChildren = pendingProps.children;
   reconcileChildren(current, workInProgress, nextChildren, renderLanes);
