@@ -31,7 +31,6 @@ import {NotPending} from '../shared/ReactDOMFormActions';
 
 import {setSrcObject} from './ReactDOMSrcObject';
 
-
 import {getCurrentRootHostContainer} from 'react-reconciler/src/ReactFiberHostContext';
 import {runWithFiberInDEV} from 'react-reconciler/src/ReactCurrentFiber';
 

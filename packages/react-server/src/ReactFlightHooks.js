@@ -101,6 +101,7 @@ export const HooksDispatcher: Dispatcher = {
     return unsupportedRefresh;
   },
   useEffectEvent: (unsupportedHook: any),
+  useFeature: (unsupportedHook: any),
 };
 
 function unsupportedHook(): void {
