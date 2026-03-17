@@ -159,7 +159,9 @@ describe('ReactFeature', () => {
       return React.createElement(
         React.Feature,
         {mode: 'active'},
-        React.createElement('div', null,
+        React.createElement(
+          'div',
+          null,
           React.createElement('span', null, 'child1'),
           React.createElement('span', null, 'child2'),
         ),
@@ -171,7 +173,9 @@ describe('ReactFeature', () => {
       root.render(React.createElement(App));
     });
     expect(root).toMatchRenderedOutput(
-      React.createElement('div', null,
+      React.createElement(
+        'div',
+        null,
         React.createElement('span', null, 'child1'),
         React.createElement('span', null, 'child2'),
       ),

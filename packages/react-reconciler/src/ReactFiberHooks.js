@@ -2075,7 +2075,7 @@ function mountFeature<S, A>(
     lastRenderedState: null,
   };
   hook.queue = queue;
-  const dispatch = queue.dispatch = (noop: any);
+  const dispatch = (queue.dispatch = (noop: any));
   return [passthrough, dispatch];
 }
 
@@ -4260,10 +4260,7 @@ if (__DEV__) {
       mountHookTypesDev();
       return mountOptimistic(passthrough, reducer);
     },
-    useFeature<S, A>(
-      passthrough: S,
-      reducer: ?(S, A) => S,
-    ): [S, (A) => void] {
+    useFeature<S, A>(passthrough: S, reducer: ?(S, A) => S): [S, (A) => void] {
       currentHookNameInDev = 'useFeature';
       mountHookTypesDev();
       return mountFeature(passthrough, reducer);
@@ -4432,10 +4429,7 @@ if (__DEV__) {
       updateHookTypesDev();
       return mountOptimistic(passthrough, reducer);
     },
-    useFeature<S, A>(
-      passthrough: S,
-      reducer: ?(S, A) => S,
-    ): [S, (A) => void] {
+    useFeature<S, A>(passthrough: S, reducer: ?(S, A) => S): [S, (A) => void] {
       currentHookNameInDev = 'useFeature';
       updateHookTypesDev();
       return mountFeature(passthrough, reducer);
@@ -4604,10 +4598,7 @@ if (__DEV__) {
       updateHookTypesDev();
       return updateOptimistic(passthrough, reducer);
     },
-    useFeature<S, A>(
-      passthrough: S,
-      reducer: ?(S, A) => S,
-    ): [S, (A) => void] {
+    useFeature<S, A>(passthrough: S, reducer: ?(S, A) => S): [S, (A) => void] {
       currentHookNameInDev = 'useFeature';
       updateHookTypesDev();
       return updateFeature(passthrough, reducer);
@@ -4776,10 +4767,7 @@ if (__DEV__) {
       updateHookTypesDev();
       return rerenderOptimistic(passthrough, reducer);
     },
-    useFeature<S, A>(
-      passthrough: S,
-      reducer: ?(S, A) => S,
-    ): [S, (A) => void] {
+    useFeature<S, A>(passthrough: S, reducer: ?(S, A) => S): [S, (A) => void] {
       currentHookNameInDev = 'useFeature';
       updateHookTypesDev();
       return rerenderFeature(passthrough, reducer);
@@ -4969,10 +4957,7 @@ if (__DEV__) {
       mountHookTypesDev();
       return mountOptimistic(passthrough, reducer);
     },
-    useFeature<S, A>(
-      passthrough: S,
-      reducer: ?(S, A) => S,
-    ): [S, (A) => void] {
+    useFeature<S, A>(passthrough: S, reducer: ?(S, A) => S): [S, (A) => void] {
       currentHookNameInDev = 'useFeature';
       warnInvalidHookAccess();
       mountHookTypesDev();
@@ -5167,10 +5152,7 @@ if (__DEV__) {
       updateHookTypesDev();
       return updateOptimistic(passthrough, reducer);
     },
-    useFeature<S, A>(
-      passthrough: S,
-      reducer: ?(S, A) => S,
-    ): [S, (A) => void] {
+    useFeature<S, A>(passthrough: S, reducer: ?(S, A) => S): [S, (A) => void] {
       currentHookNameInDev = 'useFeature';
       warnInvalidHookAccess();
       updateHookTypesDev();
@@ -5365,10 +5347,7 @@ if (__DEV__) {
       updateHookTypesDev();
       return rerenderOptimistic(passthrough, reducer);
     },
-    useFeature<S, A>(
-      passthrough: S,
-      reducer: ?(S, A) => S,
-    ): [S, (A) => void] {
+    useFeature<S, A>(passthrough: S, reducer: ?(S, A) => S): [S, (A) => void] {
       currentHookNameInDev = 'useFeature';
       warnInvalidHookAccess();
       updateHookTypesDev();

@@ -345,11 +345,7 @@ describe('ReactDOMFeature', () => {
   // @gate enableFeature
   it('Feature component handles null children', async () => {
     function App() {
-      return (
-        <Feature mode="active">
-          {null}
-        </Feature>
-      );
+      return <Feature mode="active">{null}</Feature>;
     }
 
     const root = ReactDOMClient.createRoot(container);

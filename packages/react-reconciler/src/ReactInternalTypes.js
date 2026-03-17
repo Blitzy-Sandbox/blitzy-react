@@ -455,10 +455,7 @@ export type Dispatcher = {
     initialState: Awaited<S>,
     permalink?: string,
   ) => [Awaited<S>, (P) => void, boolean],
-  useFeature: <S, A>(
-    passthrough: S,
-    reducer: ?(S, A) => S,
-  ) => [S, (A) => void],
+  useFeature: <S, A>(passthrough: S, reducer: ?(S, A) => S) => [S, (A) => void],
 };
 
 export type AsyncDispatcher = {
