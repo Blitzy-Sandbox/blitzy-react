@@ -35,8 +35,10 @@ export {
   unstable_getCacheForType,
   unstable_SuspenseList,
   ViewTransition,
+  Feature,
   unstable_startGestureTransition,
   addTransitionType,
+  featureFunction,
   unstable_useCacheRefresh,
   useId,
   useCallback,
@@ -56,6 +58,7 @@ export {
   useSyncExternalStore,
   useTransition,
   useActionState,
+  useFeature,
   version,
 } from './src/ReactClient';
 
