@@ -569,5 +569,6 @@
   "581": "BigInt is too large. Received %s digits but the limit is %s.",
   "582": "Expected prepareToHydrateHostFeatureInstance() to never be called. This error is likely caused by a bug in React. Please file an issue.",
   "583": "Expected to have a hydrated Feature instance. This error is likely caused by a bug in React. Please file an issue.",
-  "584": "Client rendering a Feature suspended it again. This is a bug in React."
+  "584": "Client rendering a Feature suspended it again. This is a bug in React.",
+  "585": "Cannot update feature state while rendering."
 }

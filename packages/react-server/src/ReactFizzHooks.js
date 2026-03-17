@@ -48,6 +48,8 @@ import {getFormState} from './ReactFizzServer';
 
 import noop from 'shared/noop';
 
+import {enableFeature} from 'shared/ReactFeatureFlags';
+
 type BasicStateAction<S> = (S => S) | S;
 type Dispatch<A> = A => void;
 
@@ -597,6 +599,21 @@ function useOptimistic<S, A>(
   return [passthrough, unsupportedSetOptimisticState];
 }
 
+function unsupportedSetFeatureState() {
+  throw new Error('Cannot update feature state while rendering.');
+}
+
+function useFeature<S, A>(
+  passthrough: S,
+  reducer: ?(S, A) => S,
+): [S, (A) => void] {
+  resolveCurrentlyRenderingComponent();
+  if (enableFeature) {
+    return [passthrough, unsupportedSetFeatureState];
+  }
+  return [passthrough, unsupportedSetFeatureState];
+}
+
 function createPostbackActionStateKey(
   permalink: string | void,
   componentKeyPath: KeyNode | null,
@@ -833,6 +850,7 @@ export const HooksDispatcher: Dispatcher = supportsClientAPIs
       useMemoCache,
       useCacheRefresh,
       useEffectEvent,
+      useFeature,
     }
   : {
       readContext,
@@ -859,6 +877,7 @@ export const HooksDispatcher: Dispatcher = supportsClientAPIs
       useMemoCache,
       useCacheRefresh,
       useEffectEvent,
+      useFeature,
     };
 
 export let currentResumableState: null | ResumableState = (null: any);
