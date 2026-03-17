@@ -8,7 +8,7 @@
  */
 
 import type {FeatureProps} from 'shared/ReactTypes';
-import type {Fiber, FiberRoot} from './ReactInternalTypes';
+import type {FiberRoot} from './ReactInternalTypes';
 
 import {enableFeature} from 'shared/ReactFeatureFlags';
 
@@ -17,7 +17,7 @@ import {enableFeature} from 'shared/ReactFeatureFlags';
  * Tracks the committed state of the feature boundary including
  * its active/inactive mode and auto-generated name for DevTools.
  */
-export type FeatureState = {
+export type FeatureFiberState = {
   // The auto-generated name for this feature boundary when an explicit
   // name is not provided via props. Used for debugging and DevTools.
   autoName: null | string,
@@ -41,7 +41,7 @@ let globalFeatureIdCounter: number = 0;
  */
 export function getFeatureName(
   props: FeatureProps,
-  state: FeatureState,
+  state: FeatureFiberState,
   root: FiberRoot,
 ): string {
   if (!enableFeature) {
@@ -68,12 +68,11 @@ export function getFeatureName(
 /**
  * Creates and returns the initial FeatureState for a newly mounted
  * Feature boundary fiber. Determines the initial active state from
- * the mode prop and caches an explicit name if provided.
+ * the mode prop. The autoName field is always initialized as null
+ * and only populated on-demand by getFeatureName when no explicit
+ * props.name is provided, following the ViewTransition autoName pattern.
  */
-export function initializeFeatureState(
-  props: FeatureProps,
-  fiber: Fiber,
-): FeatureState {
+export function initializeFeatureState(props: FeatureProps): FeatureFiberState {
   if (!enableFeature) {
     // Return a default inert state when the feature flag is disabled.
     return {
@@ -84,7 +83,7 @@ export function initializeFeatureState(
   // A Feature boundary is active unless explicitly set to 'inactive' mode.
   const isActive = props.mode !== 'inactive';
   return {
-    autoName: props.name != null ? props.name : null,
+    autoName: null,
     isActive,
   };
 }

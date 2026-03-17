@@ -11,9 +11,13 @@ import type {FeatureProps} from 'shared/ReactTypes';
 import {enableFeature} from 'shared/ReactFeatureFlags';
 import {REACT_FEATURE_TYPE} from 'shared/ReactSymbols';
 
-// Represents the resolved internal state of a Feature component instance.
-// Tracks the normalized mode and the associated element type symbol so
-// the reconciler can identify and process Feature fibers correctly.
+// Represents the resolved public state returned by featureFunction.
+// Tracks the normalized mode and includes the $$typeof symbol for type
+// discrimination — unlike ViewTransitionState or ActivityState (which are
+// reconciler-internal fiber state types), this is a public-facing tagged
+// object returned to callers so the reconciler can distinguish it from
+// plain objects during element creation. This intentionally differs from
+// the reconciler-level FeatureFiberState in ReactFiber[Feature].js.
 export type FeatureState = {
   mode: 'active' | 'inactive',
   $$typeof: symbol,

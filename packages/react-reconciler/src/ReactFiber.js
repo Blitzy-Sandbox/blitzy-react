@@ -28,7 +28,7 @@ import type {
   OffscreenProps,
 } from './ReactFiberOffscreenComponent';
 import type {ViewTransitionState} from './ReactFiberViewTransitionComponent';
-import type {FeatureState} from './ReactFiber[Feature]';
+import type {FeatureFiberState} from './ReactFiber[Feature]';
 import type {TracingMarkerInstance} from './ReactFiberTracingMarkerComponent';
 
 import {
@@ -405,15 +405,15 @@ export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
     currentDependencies === null
       ? null
       : __DEV__
-        ? {
-            lanes: currentDependencies.lanes,
-            firstContext: currentDependencies.firstContext,
-            _debugThenableState: currentDependencies._debugThenableState,
-          }
-        : {
-            lanes: currentDependencies.lanes,
-            firstContext: currentDependencies.firstContext,
-          };
+      ? {
+          lanes: currentDependencies.lanes,
+          firstContext: currentDependencies.firstContext,
+          _debugThenableState: currentDependencies._debugThenableState,
+        }
+      : {
+          lanes: currentDependencies.lanes,
+          firstContext: currentDependencies.firstContext,
+        };
 
   // These will be overridden during the parent's reconciliation
   workInProgress.sibling = current.sibling;
@@ -517,15 +517,15 @@ export function resetWorkInProgress(
       currentDependencies === null
         ? null
         : __DEV__
-          ? {
-              lanes: currentDependencies.lanes,
-              firstContext: currentDependencies.firstContext,
-              _debugThenableState: currentDependencies._debugThenableState,
-            }
-          : {
-              lanes: currentDependencies.lanes,
-              firstContext: currentDependencies.firstContext,
-            };
+        ? {
+            lanes: currentDependencies.lanes,
+            firstContext: currentDependencies.firstContext,
+            _debugThenableState: currentDependencies._debugThenableState,
+          }
+        : {
+            lanes: currentDependencies.lanes,
+            firstContext: currentDependencies.firstContext,
+          };
 
     if (enableProfilerTimer) {
       // Note: We don't reset the actualTime counts. It's useful to accumulate
@@ -591,8 +591,8 @@ export function createFiberFromTypeAndProps(
       fiberTag = isHostHoistableType(type, pendingProps, hostContext)
         ? HostHoistable
         : isHostSingletonType(type)
-          ? HostSingleton
-          : HostComponent;
+        ? HostSingleton
+        : HostComponent;
     } else if (supportsResources) {
       const hostContext = getHostContext();
       fiberTag = isHostHoistableType(type, pendingProps, hostContext)
@@ -877,7 +877,7 @@ export function createFiberFromFeature(
   const fiber = createFiber(FeatureComponent, pendingProps, key, mode);
   fiber.elementType = REACT_FEATURE_TYPE;
   fiber.lanes = lanes;
-  const instance: FeatureState = {
+  const instance: FeatureFiberState = {
     autoName: null,
     isActive: pendingProps.mode !== 'inactive',
   };
