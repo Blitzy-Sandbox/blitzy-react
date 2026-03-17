@@ -64,26 +64,3 @@ export function getFeatureName(
   state.autoName = name;
   return name;
 }
-
-/**
- * Creates and returns the initial FeatureState for a newly mounted
- * Feature boundary fiber. Determines the initial active state from
- * the mode prop. The autoName field is always initialized as null
- * and only populated on-demand by getFeatureName when no explicit
- * props.name is provided, following the ViewTransition autoName pattern.
- */
-export function initializeFeatureState(props: FeatureProps): FeatureFiberState {
-  if (!enableFeature) {
-    // Return a default inert state when the feature flag is disabled.
-    return {
-      autoName: null,
-      isActive: false,
-    };
-  }
-  // A Feature boundary is active unless explicitly set to 'inactive' mode.
-  const isActive = props.mode !== 'inactive';
-  return {
-    autoName: null,
-    isActive,
-  };
-}

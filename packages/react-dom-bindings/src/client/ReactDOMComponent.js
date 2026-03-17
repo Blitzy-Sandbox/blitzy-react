@@ -3332,6 +3332,12 @@ export function diffHydratedProperties(
         case 'data-feature':
           if (enableFeature) {
             // Feature annotations are expected from the Server Runtime.
+            // When enableFeature is true, data-feature is a known attribute
+            // managed by the feature system, so it should not be added to
+            // extraAttributes. When enableFeature is false, this intentionally
+            // falls through to the default case, which adds the attribute to
+            // extraAttributes as an unknown attribute — this is correct because
+            // the feature system is not active.
             break;
           }
         // Fallthrough

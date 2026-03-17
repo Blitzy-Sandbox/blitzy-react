@@ -48,7 +48,7 @@ import type {UpdateQueue} from './ReactFiberClassUpdateQueue';
 import type {RootState} from './ReactFiberRoot';
 import type {TracingMarkerInstance} from './ReactFiberTracingMarkerComponent';
 import type {ViewTransitionState} from './ReactFiberViewTransitionComponent';
-import type {FeatureFiberState} from './ReactFiber[Feature]';
+import type {FeatureFiberState} from './ReactFiberFeature';
 
 import {
   markComponentRenderStarted,

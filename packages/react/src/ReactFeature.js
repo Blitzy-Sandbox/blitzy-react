@@ -17,7 +17,7 @@ import {REACT_FEATURE_TYPE} from 'shared/ReactSymbols';
 // reconciler-internal fiber state types), this is a public-facing tagged
 // object returned to callers so the reconciler can distinguish it from
 // plain objects during element creation. This intentionally differs from
-// the reconciler-level FeatureFiberState in ReactFiber[Feature].js.
+// the reconciler-level FeatureFiberState in ReactFiberFeature.js.
 export type FeatureState = {
   mode: 'active' | 'inactive',
   $$typeof: symbol,

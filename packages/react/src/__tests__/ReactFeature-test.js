@@ -15,7 +15,7 @@ let act;
 let waitForAll;
 let assertConsoleErrorDev;
 
-describe('React[Feature]', () => {
+describe('ReactFeature', () => {
   beforeEach(() => {
     jest.resetModules();
     React = require('react');
@@ -125,6 +125,85 @@ describe('React[Feature]', () => {
     await act(() => {
       ReactNoop.render(React.createElement(App));
     });
+  });
+
+  // @gate enableFeature
+  it('should re-render when mode prop changes from active to inactive', async () => {
+    let setMode;
+    function App() {
+      const [mode, _setMode] = React.useState('active');
+      setMode = _setMode;
+      const state = React.featureFunction({mode});
+      return React.createElement('div', null, state.mode);
+    }
+
+    const root = ReactNoop.createRoot();
+    await act(() => {
+      root.render(React.createElement(App));
+    });
+    expect(root).toMatchRenderedOutput(
+      React.createElement('div', null, 'active'),
+    );
+
+    await act(() => {
+      setMode('inactive');
+    });
+    expect(root).toMatchRenderedOutput(
+      React.createElement('div', null, 'inactive'),
+    );
+  });
+
+  // @gate enableFeature
+  it('should render nested children correctly under a Feature boundary', async () => {
+    function App() {
+      return React.createElement(
+        React.Feature,
+        {mode: 'active'},
+        React.createElement('div', null,
+          React.createElement('span', null, 'child1'),
+          React.createElement('span', null, 'child2'),
+        ),
+      );
+    }
+
+    const root = ReactNoop.createRoot();
+    await act(() => {
+      root.render(React.createElement(App));
+    });
+    expect(root).toMatchRenderedOutput(
+      React.createElement('div', null,
+        React.createElement('span', null, 'child1'),
+        React.createElement('span', null, 'child2'),
+      ),
+    );
+  });
+
+  // @gate enableFeature
+  it('should unmount cleanly without errors', async () => {
+    function App({show}) {
+      if (!show) {
+        return null;
+      }
+      return React.createElement(
+        React.Feature,
+        {mode: 'active'},
+        React.createElement('div', null, 'content'),
+      );
+    }
+
+    const root = ReactNoop.createRoot();
+    await act(() => {
+      root.render(React.createElement(App, {show: true}));
+    });
+    expect(root).toMatchRenderedOutput(
+      React.createElement('div', null, 'content'),
+    );
+
+    // Unmount the Feature component — should not throw
+    await act(() => {
+      root.render(React.createElement(App, {show: false}));
+    });
+    expect(root).toMatchRenderedOutput(null);
   });
 
   // @gate !enableFeature

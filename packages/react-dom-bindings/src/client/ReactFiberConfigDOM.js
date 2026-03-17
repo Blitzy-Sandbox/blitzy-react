@@ -30,7 +30,7 @@ import type {TransitionTypes} from 'react/src/ReactTransitionType';
 import {NotPending} from '../shared/ReactDOMFormActions';
 
 import {setSrcObject} from './ReactDOMSrcObject';
-import {setFeature} from './ReactDOMFeature';
+
 
 import {getCurrentRootHostContainer} from 'react-reconciler/src/ReactFiberHostContext';
 import {runWithFiberInDEV} from 'react-reconciler/src/ReactCurrentFiber';
@@ -129,7 +129,6 @@ import {
   enableProfilerTimer,
   enableFragmentRefsInstanceHandles,
   enableFragmentRefsTextNodes,
-  enableFeature,
 } from 'shared/ReactFeatureFlags';
 import {
   HostComponent,
@@ -1177,24 +1176,6 @@ export function removeChildFromContainer(
     parentNode = (container: any);
   }
   parentNode.removeChild(child);
-}
-
-export function commitFeatureUpdate(
-  domElement: Instance,
-  type: string,
-  newProps: Props,
-  oldProps: Props,
-): void {
-  if (enableFeature) {
-    // Apply the feature-specific data attribute when the prop value changes
-    // between renders. Delegates to the dedicated ReactDOMFeature helper for
-    // the actual DOM mutation, following the setSrcObject delegation pattern.
-    const newValue = (newProps: any)['data-feature'];
-    const oldValue = (oldProps: any)['data-feature'];
-    if (newValue !== oldValue) {
-      setFeature(domElement, type, newValue);
-    }
-  }
 }
 
 function clearHydrationBoundary(
@@ -4395,21 +4376,6 @@ export function shouldDeleteUnhydratedTailInstances(
   parentType: string,
 ): boolean {
   return parentType !== 'form' && parentType !== 'button';
-}
-
-export function hydrateFeature(
-  domElement: Instance,
-  type: string,
-  props: Props,
-): void {
-  if (enableFeature) {
-    // During hydration, reconcile the feature data attribute from
-    // server-rendered markup so client-side state remains consistent.
-    const value = (props: any)['data-feature'];
-    if (value != null) {
-      setFeature(domElement, type, value);
-    }
-  }
 }
 
 // -------------------

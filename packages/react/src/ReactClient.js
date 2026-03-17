@@ -60,7 +60,7 @@ import {
   useActionState,
   useFeature,
 } from './ReactHooks';
-import {featureFunction} from './React[Feature]';
+import {featureFunction} from './ReactFeature';
 import ReactSharedInternals from './ReactSharedInternalsClient';
 import {startTransition, startGestureTransition} from './ReactStartTransition';
 import {addTransitionType} from './ReactTransitionType';

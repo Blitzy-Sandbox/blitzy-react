@@ -1812,6 +1812,29 @@ function pushAttribute(
     case 'xmlSpace':
       pushStringAttribute(target, 'xml:space', value);
       return;
+    case 'feature': {
+      if (enableFeature) {
+        // Map the React prop name 'feature' to the DOM attribute 'data-feature'
+        // to match the client-side setProp/setFeature mapping in
+        // ReactDOMComponent.js. Without this mapping, SSR would render
+        // feature="value" while the client sets data-feature="value",
+        // causing a hydration mismatch.
+        if (typeof value === 'object') {
+          target.push(
+            attributeSeparator,
+            stringToChunk('data-feature'),
+            attributeAssign,
+            stringToChunk(escapeTextForBrowser(JSON.stringify((value: any)))),
+            attributeEnd,
+          );
+          return;
+        }
+        pushStringAttribute(target, 'data-feature', value);
+        return;
+      }
+      // When the feature is disabled, fall through to default handling.
+    }
+    // falls through
     case 'data-feature': {
       if (enableFeature) {
         // When the feature is enabled, handle object values by serializing
