@@ -46,7 +46,9 @@ export {
   unstable_LegacyHidden,
   Activity,
   ViewTransition,
+  Feature,
   addTransitionType,
+  featureFunction,
   unstable_Scope,
   unstable_SuspenseList,
   unstable_TracingMarker,
@@ -70,6 +72,7 @@ export {
   useState,
   useTransition,
   useActionState,
+  useFeature,
   version,
   act, // DEV-only
   captureOwnerStack, // DEV-only

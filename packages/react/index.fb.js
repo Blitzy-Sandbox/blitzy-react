@@ -41,9 +41,11 @@ export {
   unstable_SuspenseList,
   ViewTransition,
   ViewTransition as unstable_ViewTransition,
+  Feature,
   unstable_TracingMarker,
   addTransitionType,
   addTransitionType as unstable_addTransitionType,
+  featureFunction,
   unstable_useCacheRefresh,
   use,
   useActionState,
@@ -63,6 +65,7 @@ export {
   useState,
   useSyncExternalStore,
   useTransition,
+  useFeature,
   version,
 } from './src/ReactClient';
 

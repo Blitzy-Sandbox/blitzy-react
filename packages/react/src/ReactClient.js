@@ -20,6 +20,7 @@ import {
   REACT_TRACING_MARKER_TYPE,
   REACT_VIEW_TRANSITION_TYPE,
   REACT_OPTIMISTIC_KEY,
+  REACT_FEATURE_TYPE,
 } from 'shared/ReactSymbols';
 
 import {Component, PureComponent} from './ReactBaseClasses';
@@ -57,7 +58,9 @@ import {
   use,
   useOptimistic,
   useActionState,
+  useFeature,
 } from './ReactHooks';
+import {featureFunction} from './React[Feature]';
 import ReactSharedInternals from './ReactSharedInternalsClient';
 import {startTransition, startGestureTransition} from './ReactStartTransition';
 import {addTransitionType} from './ReactTransitionType';
@@ -130,6 +133,10 @@ export {
   startGestureTransition as unstable_startGestureTransition,
   // enableOptimisticKey
   REACT_OPTIMISTIC_KEY as optimisticKey,
+  // enableFeature
+  REACT_FEATURE_TYPE as Feature,
+  featureFunction,
+  useFeature,
   // DEV-only
   useId,
   act,
