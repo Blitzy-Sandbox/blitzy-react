@@ -13,6 +13,7 @@ import type {
   ReactNodeList,
   ViewTransitionProps,
   ActivityProps,
+  FeatureProps,
   SuspenseProps,
   SuspenseListProps,
   SuspenseListRevealOrder,
@@ -83,6 +84,7 @@ import {
   Throw,
   ViewTransitionComponent,
   ActivityComponent,
+  FeatureComponent,
 } from './ReactWorkTags';
 import {
   NoFlags,
@@ -118,6 +120,7 @@ import {
   enableCPUSuspense,
   disableLegacyMode,
   enableViewTransition,
+  enableFeature,
   enableFragmentRefs,
 } from 'shared/ReactFeatureFlags';
 import shallowEqual from 'shared/shallowEqual';
@@ -3558,6 +3561,28 @@ function updateSuspenseListComponent(
   return workInProgress.child;
 }
 
+function updateFeatureComponent(
+  current: Fiber | null,
+  workInProgress: Fiber,
+  renderLanes: Lanes,
+) {
+  const pendingProps: FeatureProps = workInProgress.pendingProps;
+  // Initialize stateNode on first render if not already set.
+  if (workInProgress.stateNode === null) {
+    const instance = {
+      autoName: null,
+      isActive: pendingProps.mode !== 'inactive',
+    };
+    workInProgress.stateNode = instance;
+  } else {
+    // Update isActive state based on current props.
+    workInProgress.stateNode.isActive = pendingProps.mode !== 'inactive';
+  }
+  const nextChildren = pendingProps.children;
+  reconcileChildren(current, workInProgress, nextChildren, renderLanes);
+  return workInProgress.child;
+}
+
 function updateViewTransition(
   current: Fiber | null,
   workInProgress: Fiber,
@@ -4407,6 +4432,12 @@ function beginWork(
     case ViewTransitionComponent: {
       if (enableViewTransition) {
         return updateViewTransition(current, workInProgress, renderLanes);
+      }
+      break;
+    }
+    case FeatureComponent: {
+      if (enableFeature) {
+        return updateFeatureComponent(current, workInProgress, renderLanes);
       }
       break;
     }

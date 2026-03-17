@@ -14,6 +14,7 @@ import type {
   ReactScope,
   ViewTransitionProps,
   ActivityProps,
+  FeatureProps,
   ReactKey,
 } from 'shared/ReactTypes';
 import type {Fiber} from './ReactInternalTypes';
@@ -27,6 +28,7 @@ import type {
   OffscreenProps,
 } from './ReactFiberOffscreenComponent';
 import type {ViewTransitionState} from './ReactFiberViewTransitionComponent';
+import type {FeatureState} from './ReactFiber[Feature]';
 import type {TracingMarkerInstance} from './ReactFiberTracingMarkerComponent';
 
 import {
@@ -43,6 +45,7 @@ import {
   disableLegacyMode,
   enableObjectFiber,
   enableViewTransition,
+  enableFeature,
   enableSuspenseyImages,
   enableOptimisticKey,
 } from 'shared/ReactFeatureFlags';
@@ -76,6 +79,7 @@ import {
   Throw,
   ViewTransitionComponent,
   ActivityComponent,
+  FeatureComponent,
 } from './ReactWorkTags';
 import {getComponentNameFromOwner} from 'react-reconciler/src/getComponentNameFromFiber';
 import {isDevToolsPresent} from './ReactFiberDevToolsHook';
@@ -110,6 +114,7 @@ import {
   REACT_ELEMENT_TYPE,
   REACT_VIEW_TRANSITION_TYPE,
   REACT_ACTIVITY_TYPE,
+  REACT_FEATURE_TYPE,
 } from 'shared/ReactSymbols';
 import {TransitionTracingMarker} from './ReactFiberTracingMarkerComponent';
 import {getHostContext} from './ReactFiberHostContext';
@@ -602,6 +607,11 @@ export function createFiberFromTypeAndProps(
     getTag: switch (type) {
       case REACT_ACTIVITY_TYPE:
         return createFiberFromActivity(pendingProps, mode, lanes, key);
+      case REACT_FEATURE_TYPE:
+        if (enableFeature) {
+          return createFiberFromFeature(pendingProps, mode, lanes, key);
+        }
+      // Fall through
       case REACT_FRAGMENT_TYPE:
         return createFiberFromFragment(pendingProps.children, mode, lanes, key);
       case REACT_STRICT_MODE_TYPE:
@@ -855,6 +865,23 @@ export function createFiberFromActivity(
   const fiber = createFiber(ActivityComponent, pendingProps, key, mode);
   fiber.elementType = REACT_ACTIVITY_TYPE;
   fiber.lanes = lanes;
+  return fiber;
+}
+
+export function createFiberFromFeature(
+  pendingProps: FeatureProps,
+  mode: TypeOfMode,
+  lanes: Lanes,
+  key: ReactKey,
+): Fiber {
+  const fiber = createFiber(FeatureComponent, pendingProps, key, mode);
+  fiber.elementType = REACT_FEATURE_TYPE;
+  fiber.lanes = lanes;
+  const instance: FeatureState = {
+    autoName: null,
+    isActive: pendingProps.mode !== 'inactive',
+  };
+  fiber.stateNode = instance;
   return fiber;
 }
 
