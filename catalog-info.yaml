@@ -4,11 +4,10 @@ metadata:
   name: blitzy-react
   description: "React monorepo contributions — Feature component/hook API and react-server-dom-bun Server Components bindings"
   tags:
-    - javascript
+    - typescript
     - library
-    - in-progress
+    - refactor
   labels:
-    blitzy.com/status: in-progress
     blitzy.com/language: javascript
   annotations:
     github.com/project-slug: Blitzy-Sandbox/blitzy-react
