@@ -13,6 +13,7 @@ import type {
   ReactNodeList,
   ViewTransitionProps,
   ActivityProps,
+  FeatureProps,
   SuspenseProps,
   SuspenseListProps,
   SuspenseListRevealOrder,
@@ -47,6 +48,7 @@ import type {UpdateQueue} from './ReactFiberClassUpdateQueue';
 import type {RootState} from './ReactFiberRoot';
 import type {TracingMarkerInstance} from './ReactFiberTracingMarkerComponent';
 import type {ViewTransitionState} from './ReactFiberViewTransitionComponent';
+import type {FeatureFiberState} from './ReactFiberFeature';
 
 import {
   markComponentRenderStarted,
@@ -83,6 +85,7 @@ import {
   Throw,
   ViewTransitionComponent,
   ActivityComponent,
+  FeatureComponent,
 } from './ReactWorkTags';
 import {
   NoFlags,
@@ -118,6 +121,7 @@ import {
   enableCPUSuspense,
   disableLegacyMode,
   enableViewTransition,
+  enableFeature,
   enableFragmentRefs,
 } from 'shared/ReactFeatureFlags';
 import shallowEqual from 'shared/shallowEqual';
@@ -3558,6 +3562,29 @@ function updateSuspenseListComponent(
   return workInProgress.child;
 }
 
+function updateFeatureComponent(
+  current: Fiber | null,
+  workInProgress: Fiber,
+  renderLanes: Lanes,
+) {
+  const pendingProps: FeatureProps = workInProgress.pendingProps;
+  // Initialize stateNode on first render if not already set.
+  if (workInProgress.stateNode === null) {
+    const instance: FeatureFiberState = {
+      autoName: null,
+      isActive: pendingProps.mode !== 'inactive',
+    };
+    workInProgress.stateNode = instance;
+  } else {
+    // Update isActive state based on current props.
+    const state: FeatureFiberState = workInProgress.stateNode;
+    state.isActive = pendingProps.mode !== 'inactive';
+  }
+  const nextChildren = pendingProps.children;
+  reconcileChildren(current, workInProgress, nextChildren, renderLanes);
+  return workInProgress.child;
+}
+
 function updateViewTransition(
   current: Fiber | null,
   workInProgress: Fiber,
@@ -4407,6 +4434,12 @@ function beginWork(
     case ViewTransitionComponent: {
       if (enableViewTransition) {
         return updateViewTransition(current, workInProgress, renderLanes);
+      }
+      break;
+    }
+    case FeatureComponent: {
+      if (enableFeature) {
+        return updateFeatureComponent(current, workInProgress, renderLanes);
       }
       break;
     }

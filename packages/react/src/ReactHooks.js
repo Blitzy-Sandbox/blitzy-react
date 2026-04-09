@@ -239,3 +239,12 @@ export function useActionState<S, P>(
   const dispatcher = resolveDispatcher();
   return dispatcher.useActionState(action, initialState, permalink);
 }
+
+export function useFeature<S, A>(
+  passthrough: S,
+  reducer: ?(S, A) => S,
+): [S, (A) => void] {
+  const dispatcher = resolveDispatcher();
+  // $FlowFixMe[not-a-function] This is unstable, thus optional
+  return dispatcher.useFeature(passthrough, reducer);
+}

@@ -351,6 +351,12 @@ export type ActivityProps = {
   name?: string,
 };
 
+export type FeatureProps = {
+  mode?: 'active' | 'inactive' | null | void,
+  children?: ReactNodeList,
+  name?: string,
+};
+
 export type SuspenseProps = {
   children?: ReactNodeList,
   fallback?: ReactNodeList,

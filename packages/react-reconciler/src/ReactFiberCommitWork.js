@@ -61,6 +61,7 @@ import {
   enableFragmentRefs,
   enableEagerAlternateStateNodeCleanup,
   enableDefaultTransitionIndicator,
+  enableFeature,
 } from 'shared/ReactFeatureFlags';
 import {
   FunctionComponent,
@@ -87,6 +88,7 @@ import {
   TracingMarkerComponent,
   ViewTransitionComponent,
   Fragment,
+  FeatureComponent,
 } from './ReactWorkTags';
 import {
   NoFlags,
@@ -557,6 +559,11 @@ function commitBeforeMutationEffectsOnFiber(
         break;
       }
     // Fallthrough
+    case FeatureComponent:
+      if (enableFeature) {
+        break;
+      }
+    // Fallthrough
     default: {
       if ((flags & Snapshot) !== NoFlags) {
         throw new Error(
@@ -849,6 +856,17 @@ function commitLayoutEffectOnFiber(
         if (flags & Ref) {
           safelyAttachRef(finishedWork, finishedWork.return);
         }
+        break;
+      }
+      break;
+    }
+    case FeatureComponent: {
+      if (enableFeature) {
+        recursivelyTraverseLayoutEffects(
+          finishedRoot,
+          finishedWork,
+          committedLanes,
+        );
         break;
       }
       break;
@@ -2631,6 +2649,14 @@ function commitMutationEffectsOnFiber(
       }
       break;
     }
+    case FeatureComponent: {
+      if (enableFeature) {
+        recursivelyTraverseMutationEffects(root, finishedWork, lanes);
+        commitReconciliationEffects(finishedWork, lanes);
+        break;
+      }
+      break;
+    }
     case ScopeComponent: {
       if (enableScopeAPI) {
         recursivelyTraverseMutationEffects(root, finishedWork, lanes);
@@ -4089,6 +4115,19 @@ function commitPassiveMountOnFiber(
       }
       // Fallthrough
     }
+    case FeatureComponent: {
+      if (enableFeature) {
+        recursivelyTraversePassiveMountEffects(
+          finishedRoot,
+          finishedWork,
+          committedLanes,
+          committedTransitions,
+          endTime,
+        );
+        break;
+      }
+      // Fallthrough
+    }
     case TracingMarkerComponent: {
       if (enableTransitionTracing) {
         recursivelyTraversePassiveMountEffects(
@@ -4911,6 +4950,13 @@ function commitPassiveUnmountOnFiber(finishedWork: Fiber): void {
       }
 
       break;
+    }
+    case FeatureComponent: {
+      if (enableFeature) {
+        recursivelyTraversePassiveUnmountEffects(finishedWork);
+        break;
+      }
+      // Fallthrough
     }
     default: {
       recursivelyTraversePassiveUnmountEffects(finishedWork);

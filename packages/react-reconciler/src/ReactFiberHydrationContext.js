@@ -29,7 +29,9 @@ import {
   HostRoot,
   SuspenseComponent,
   ActivityComponent,
+  FeatureComponent,
 } from './ReactWorkTags';
+import {enableFeature} from 'shared/ReactFeatureFlags';
 
 import {createCapturedValueAtFiber} from './ReactCapturedValue';
 
@@ -721,6 +723,14 @@ function popToNextHostParent(fiber: Fiber): void {
       case SuspenseComponent:
         rootOrSingletonContext = false;
         return;
+      case FeatureComponent:
+        if (enableFeature) {
+          rootOrSingletonContext = false;
+          return;
+        }
+        // Feature is disabled, skip this tag and continue traversal
+        hydrationParentFiber = hydrationParentFiber.return;
+        break;
       case HostSingleton:
       case HostRoot:
         rootOrSingletonContext = true;

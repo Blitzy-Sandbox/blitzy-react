@@ -41,6 +41,7 @@ import {
   disableLegacyMode,
   enableViewTransition,
   enableSuspenseyImages,
+  enableFeature,
 } from 'shared/ReactFeatureFlags';
 
 import {now} from './Scheduler';
@@ -75,6 +76,7 @@ import {
   Throw,
   ViewTransitionComponent,
   ActivityComponent,
+  FeatureComponent,
 } from './ReactWorkTags';
 import {
   NoMode,
@@ -2060,6 +2062,14 @@ function completeWork(
         // bubble up to the parent tree to indicate that there's a child that
         // might need an exit View Transition upon unmount.
         workInProgress.flags |= ViewTransitionStatic;
+        bubbleProperties(workInProgress);
+      }
+      return null;
+    }
+    case FeatureComponent: {
+      if (enableFeature) {
+        // Propagate effect flags from children up the tree so that the
+        // commit phase can process effects for this feature component.
         bubbleProperties(workInProgress);
       }
       return null;
