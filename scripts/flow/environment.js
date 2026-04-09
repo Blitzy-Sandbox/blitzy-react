@@ -151,6 +151,11 @@ declare const __turbopack_require__: ((id: string) => any) & {
   u: string => string,
 };
 
+declare function __bun_load__(id: string): Promise<mixed>;
+declare const __bun_require__: ((id: string) => any) & {
+  u: string => string,
+};
+
 declare var parcelRequire: {
   (id: string): any,
   load: (url: string) => Promise<mixed>,
