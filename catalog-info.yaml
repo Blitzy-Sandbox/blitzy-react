@@ -2,11 +2,14 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: blitzy-react
-  description: "React monorepo contributions — Feature component/hook API and react-server-dom-bun Server Components bindings"
+  description: React monorepo contributions — Feature component/hook API and react-server-dom-bun
+    Server Components bindings
   tags:
-    - typescript
-    - library
-    - refactor
+  - javascript
+  - library
+  - new-feature
+  - refactor
+  - typescript
   labels:
     blitzy.com/language: javascript
   annotations:
@@ -14,17 +17,17 @@ metadata:
     github.com/project-slug: Blitzy-Sandbox/blitzy-react
     backstage.io/source-location: url:https://github.com/Blitzy-Sandbox/blitzy-react/tree/main/
   links:
-    - url: https://github.com/Blitzy-Sandbox/blitzy-react
-      title: GitHub Repository
-    - url: https://github.com/Blitzy-Sandbox/blitzy-react/pull/1
-      title: "PR #1: React Server Components for Bun"
-      icon: github
-    - url: https://github.com/Blitzy-Sandbox/blitzy-react/pull/2
-      title: "PR #2: Feature Component & useFeature Hook"
-      icon: github
-    - url: https://github.com/Blitzy-Sandbox/blitzy-react/tree/main/blitzy/documentation
-      title: Blitzy Documentation
-      icon: docs
+  - url: https://github.com/Blitzy-Sandbox/blitzy-react
+    title: GitHub Repository
+  - url: https://github.com/Blitzy-Sandbox/blitzy-react/pull/1
+    title: 'PR #1: React Server Components for Bun'
+    icon: github
+  - url: https://github.com/Blitzy-Sandbox/blitzy-react/pull/2
+    title: 'PR #2: Feature Component & useFeature Hook'
+    icon: github
+  - url: https://github.com/Blitzy-Sandbox/blitzy-react/tree/main/blitzy/documentation
+    title: Blitzy Documentation
+    icon: docs
 spec:
   type: library
   lifecycle: experimental
