@@ -24,6 +24,7 @@ import type {
   ReactAsyncInfo,
   ViewTransitionProps,
   ActivityProps,
+  FeatureProps,
   SuspenseProps,
   SuspenseListProps,
   SuspenseListRevealOrder,
@@ -171,6 +172,7 @@ import {
   REACT_SCOPE_TYPE,
   REACT_VIEW_TRANSITION_TYPE,
   REACT_ACTIVITY_TYPE,
+  REACT_FEATURE_TYPE,
   REACT_OPTIMISTIC_KEY,
 } from 'shared/ReactSymbols';
 import ReactSharedInternals from 'shared/ReactSharedInternals';
@@ -184,6 +186,7 @@ import {
   enableFizzBlockingRender,
   enableAsyncDebugInfo,
   enableCPUSuspense,
+  enableFeature,
 } from 'shared/ReactFeatureFlags';
 
 import assign from 'shared/assign';
@@ -2915,6 +2918,24 @@ function renderViewTransition(
   task.keyPath = prevKeyPath;
 }
 
+function renderFeature(
+  request: Request,
+  task: Task,
+  keyPath: KeyNode,
+  props: FeatureProps,
+): void {
+  const mode = props.mode;
+  if (mode === 'inactive') {
+    // An inactive Feature boundary is not server rendered.
+    return;
+  }
+  // An active Feature boundary renders its children directly.
+  const prevKeyPath = task.keyPath;
+  task.keyPath = keyPath;
+  renderNodeDestructive(request, task, props.children, -1);
+  task.keyPath = prevKeyPath;
+}
+
 function renderElement(
   request: Request,
   task: Task,
@@ -2968,6 +2989,13 @@ function renderElement(
     case REACT_VIEW_TRANSITION_TYPE: {
       if (enableViewTransition) {
         renderViewTransition(request, task, keyPath, props);
+        return;
+      }
+      // Fallthrough
+    }
+    case REACT_FEATURE_TYPE: {
+      if (enableFeature) {
+        renderFeature(request, task, keyPath, props);
         return;
       }
       // Fallthrough

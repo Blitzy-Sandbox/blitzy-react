@@ -78,3 +78,5 @@ import type {ReactOptimisticKey} from 'shared/ReactTypes';
 export const REACT_OPTIMISTIC_KEY: ReactOptimisticKey = (Symbol.for(
   'react.optimistic_key',
 ): any);
+
+export const REACT_FEATURE_TYPE: symbol = Symbol.for('react.feature');

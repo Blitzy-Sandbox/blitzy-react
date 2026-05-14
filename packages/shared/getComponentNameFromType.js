@@ -25,11 +25,13 @@ import {
   REACT_TRACING_MARKER_TYPE,
   REACT_VIEW_TRANSITION_TYPE,
   REACT_ACTIVITY_TYPE,
+  REACT_FEATURE_TYPE,
 } from 'shared/ReactSymbols';
 
 import {
   enableTransitionTracing,
   enableViewTransition,
+  enableFeature,
 } from './ReactFeatureFlags';
 
 // Keep in sync with react-reconciler/getComponentNameFromFiber
@@ -82,6 +84,11 @@ export default function getComponentNameFromType(type: mixed): string | null {
       return 'SuspenseList';
     case REACT_ACTIVITY_TYPE:
       return 'Activity';
+    case REACT_FEATURE_TYPE:
+      if (enableFeature) {
+        return 'Feature';
+      }
+    // Fall through
     case REACT_VIEW_TRANSITION_TYPE:
       if (enableViewTransition) {
         return 'ViewTransition';

@@ -18,6 +18,7 @@ export {
   preinit,
   preinitModule,
   requestFormReset,
+  setFeature,
   unstable_batchedUpdates,
   useFormState,
   useFormStatus,

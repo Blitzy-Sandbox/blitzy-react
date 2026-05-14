@@ -48,6 +48,7 @@ import {
   restoreControlledTextareaState,
 } from './ReactDOMTextarea';
 import {setSrcObject} from './ReactDOMSrcObject';
+import {setFeature} from './ReactDOMFeature';
 import {validateTextNesting} from './validateDOMNesting';
 import setTextContent from './setTextContent';
 import {
@@ -68,6 +69,7 @@ import noop from 'shared/noop';
 import {trackHostMutation} from 'react-reconciler/src/ReactFiberMutationTracking';
 
 import {
+  enableFeature,
   enableHydrationChangeEvent,
   enableScrollEndPolyfill,
   enableSrcObject,
@@ -940,6 +942,12 @@ function setProp(
     case 'innerText':
     case 'textContent':
       return;
+    case 'feature': {
+      if (enableFeature) {
+        setFeature(domElement, tag, value);
+      }
+      break;
+    }
     case 'popoverTarget':
       if (__DEV__) {
         if (
@@ -3051,6 +3059,32 @@ function diffHydratedGenericElement(
           serverDifferences,
         );
         continue;
+      case 'feature': {
+        if (enableFeature) {
+          extraAttributes.delete('data-feature');
+          const serverValue = (domElement: any).getAttribute('data-feature');
+          if (typeof value === 'object' && value !== null) {
+            const expected = JSON.stringify((value: any));
+            warnForPropDifference(
+              propKey,
+              serverValue,
+              expected,
+              serverDifferences,
+            );
+          } else if (value != null) {
+            if (__DEV__) {
+              checkAttributeStringCoercion(value, propKey);
+            }
+            warnForPropDifference(
+              propKey,
+              serverValue,
+              '' + value,
+              serverDifferences,
+            );
+          }
+        }
+        continue;
+      }
       default: {
         if (
           // shouldIgnoreAttribute
@@ -3292,6 +3326,18 @@ export function diffHydratedProperties(
             // View Transition annotations are expected from the Server Runtime.
             // However, if they're also specified on the client and don't match
             // that's an error.
+            break;
+          }
+        // Fallthrough
+        case 'data-feature':
+          if (enableFeature) {
+            // Feature annotations are expected from the Server Runtime.
+            // When enableFeature is true, data-feature is a known attribute
+            // managed by the feature system, so it should not be added to
+            // extraAttributes. When enableFeature is false, this intentionally
+            // falls through to the default case, which adds the attribute to
+            // extraAttributes as an unknown attribute — this is correct because
+            // the feature system is not active.
             break;
           }
         // Fallthrough

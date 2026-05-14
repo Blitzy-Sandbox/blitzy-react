@@ -158,7 +158,16 @@
   },
   "resolutions": {
     "react-is": "npm:react-is",
-    "jsdom": "22.1.0"
+    "jsdom": "22.1.0",
+    "@babel/core": "^7.26.10",
+    "@babel/traverse": "^7.23.2",
+    "cross-spawn": "^7.0.5",
+    "form-data": "^4.0.4",
+    "minimist": "^1.2.6",
+    "sha.js": "^2.4.12",
+    "shell-quote": "^1.7.3",
+    "simple-git": "^3.32.3",
+    "thenify": "^3.3.1"
   },
   "packageManager": "yarn@1.22.22"
 }

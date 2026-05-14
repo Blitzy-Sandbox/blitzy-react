@@ -84,5 +84,7 @@ export const enablePerformanceIssueReporting: boolean =
 export const enableInternalInstanceMap: boolean = false;
 export const enableOptimisticKey: boolean = false;
 
+export const enableFeature: boolean = false;
+
 // Flow magic to verify the exports of this file match the original version.
 ((((null: any): ExportsType): FeatureFlagsType): ExportsType);

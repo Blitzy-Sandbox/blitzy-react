@@ -97,6 +97,7 @@ function getPrimitiveStackCache(): Map<string, Array<any>> {
       Dispatcher.useDeferredValue(null);
       Dispatcher.useMemo(() => null);
       Dispatcher.useOptimistic(null, (s: mixed, a: mixed) => s);
+      Dispatcher.useFeature(null, (s: mixed, a: mixed) => s);
       Dispatcher.useFormState((s: mixed, p: mixed) => s, null);
       Dispatcher.useActionState((s: mixed, p: mixed) => s, null);
       Dispatcher.useHostTransitionStatus();
@@ -761,6 +762,28 @@ function useEffectEvent<Args, F: (...Array<Args>) => mixed>(callback: F): F {
   return callback;
 }
 
+function useFeature<S, A>(
+  passthrough: S,
+  reducer: ?(S, A) => S,
+): [S, (A) => void] {
+  const hook = nextHook();
+  let state;
+  if (hook !== null) {
+    state = hook.memoizedState;
+  } else {
+    state = passthrough;
+  }
+  hookLog.push({
+    displayName: null,
+    primitive: 'Feature',
+    stackError: new Error(),
+    value: state,
+    debugInfo: null,
+    dispatcherHookName: 'Feature',
+  });
+  return [state, (action: A) => {}];
+}
+
 const Dispatcher: DispatcherType = {
   readContext,
 
@@ -787,6 +810,7 @@ const Dispatcher: DispatcherType = {
   useMemoCache,
   useCacheRefresh,
   useEffectEvent,
+  useFeature,
 };
 
 // create a proxy to throw a custom error
