@@ -5,6 +5,7 @@ metadata:
   description: React monorepo contributions — Feature component/hook API and react-server-dom-bun
     Server Components bindings
   tags:
+  - frontend
   - javascript
   - library
   - new-feature
